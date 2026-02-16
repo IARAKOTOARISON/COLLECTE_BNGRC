@@ -34,7 +34,18 @@ $router->group('', function(Router $router) use ($app) {
 	// Pages statiques / formulaires / listes — routes alignées avec le menu
 
 	$router->get('/besoins/formulaire', function() use ($app) {
-		$app->render('besoinFormulaire');
+		$db = $app->db();
+		// charger les villes et types de besoin depuis la base
+		$villeModel = new \App\models\Ville($db);
+		$typeModel = new \App\models\TypeBesoin($db);
+
+		$villes = $villeModel->getAllVilles();
+		$types = $typeModel->getAllTypesBesoin();
+
+		$app->render('besoinFormulaire', [
+			'villes' => $villes,
+			'types' => $types,
+		]);
 	});
 
 	$router->get('/besoins/liste', function() use ($app) {

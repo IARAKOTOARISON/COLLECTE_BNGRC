@@ -46,18 +46,23 @@
                                             </label>
                                             <select class="form-select form-select-lg" id="ville" name="ville" required>
                                                 <option value="" selected disabled>-- Sélectionnez une ville --</option>
-                                                <option value="1">Antananarivo</option>
-                                                <option value="2">Toamasina</option>
-                                                <option value="3">Mahajanga</option>
-                                                <option value="4">Fianarantsoa</option>
-                                                <option value="5">Toliara</option>
-                                                <option value="6">Antsiranana</option>
-                                                <option value="7">Antsirabe</option>
-                                                <option value="8">Morondava</option>
-                                                <option value="9">Ambositra</option>
-                                                <option value="10">Manakara</option>
-                                                <option value="11">Sambava</option>
-                                                <option value="12">Taolagnaro</option>
+                                                <?php if (!empty($villes) && is_array($villes)): ?>
+                                                    <?php foreach ($villes as $v): ?>
+                                                        <?php
+                                                            // compatibilité champs: id/nom ou ID/NOM
+                                                            $vid = $v['id'] ?? $v['ID'] ?? null;
+                                                            $vnom = $v['nom'] ?? $v['NOM'] ?? $v['name'] ?? null;
+                                                        ?>
+                                                        <?php if ($vid !== null && $vnom !== null): ?>
+                                                            <option value="<?= htmlspecialchars($vid) ?>"><?= htmlspecialchars($vnom) ?></option>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+                                                <?php else: ?>
+                                                    <!-- Fallback statique si la table ville est vide ou indisponible -->
+                                                    <option value="1">Antananarivo</option>
+                                                    <option value="2">Toamasina</option>
+                                                    <option value="3">Mahajanga</option>
+                                                <?php endif; ?>
                                             </select>
                                             <div class="form-text">Choisissez la ville qui a besoin d'assistance</div>
                                         </div>
@@ -69,34 +74,49 @@
                                             </label>
                                             <select class="form-select form-select-lg" id="produit" name="produit" required>
                                                 <option value="" selected disabled>-- Sélectionnez un produit --</option>
-                                                <optgroup label="Alimentation">
-                                                    <option value="riz">Riz (kg)</option>
-                                                    <option value="huile">Huile (litres)</option>
-                                                    <option value="eau">Eau potable (litres)</option>
-                                                    <option value="conserves">Conserves alimentaires</option>
-                                                    <option value="lait">Lait en poudre (kg)</option>
-                                                    <option value="sucre">Sucre (kg)</option>
-                                                </optgroup>
-                                                <optgroup label="Matériaux de construction">
-                                                    <option value="tole">Tôles ondulées (unités)</option>
-                                                    <option value="bois">Bois de construction (m³)</option>
-                                                    <option value="ciment">Ciment (sacs)</option>
-                                                    <option value="clous">Clous (kg)</option>
-                                                </optgroup>
-                                                <optgroup label="Équipements">
-                                                    <option value="tente">Tentes (unités)</option>
-                                                    <option value="couverture">Couvertures (unités)</option>
-                                                    <option value="vetements">Vêtements (lots)</option>
-                                                    <option value="lampe">Lampes torches (unités)</option>
-                                                    <option value="jerrycan">Jerrycans (unités)</option>
-                                                </optgroup>
-                                                <optgroup label="Santé & Hygiène">
-                                                    <option value="medicaments">Médicaments (kits)</option>
-                                                    <option value="kit_hygiene">Kits d'hygiène (unités)</option>
-                                                    <option value="savon">Savon (unités)</option>
-                                                    <option value="desinfectant">Désinfectant (litres)</option>
-                                                    <option value="masque">Masques (boîtes)</option>
-                                                </optgroup>
+                                                <?php if (!empty($types) && is_array($types)): ?>
+                                                    <?php foreach ($types as $t): ?>
+                                                        <?php
+                                                            // compatibilité champs: id/nom/label
+                                                            $tid = $t['id'] ?? $t['ID'] ?? null;
+                                                            $tnom = $t['nom'] ?? $t['NOM'] ?? $t['name'] ?? null;
+                                                        ?>
+                                                        <?php if ($tnom !== null): ?>
+                                                            <!-- on met la valeur à $tnom (texte) pour garder compatibilité avec le mapping JS existant -->
+                                                            <option value="<?= htmlspecialchars(strtolower($tnom)) ?>"><?= htmlspecialchars($tnom) ?></option>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+                                                <?php else: ?>
+                                                    <!-- Fallback statique -->
+                                                    <optgroup label="Alimentation">
+                                                        <option value="riz">Riz (kg)</option>
+                                                        <option value="huile">Huile (litres)</option>
+                                                        <option value="eau">Eau potable (litres)</option>
+                                                        <option value="conserves">Conserves alimentaires</option>
+                                                        <option value="lait">Lait en poudre (kg)</option>
+                                                        <option value="sucre">Sucre (kg)</option>
+                                                    </optgroup>
+                                                    <optgroup label="Matériaux de construction">
+                                                        <option value="tole">Tôles ondulées (unités)</option>
+                                                        <option value="bois">Bois de construction (m³)</option>
+                                                        <option value="ciment">Ciment (sacs)</option>
+                                                        <option value="clous">Clous (kg)</option>
+                                                    </optgroup>
+                                                    <optgroup label="Équipements">
+                                                        <option value="tente">Tentes (unités)</option>
+                                                        <option value="couverture">Couvertures (unités)</option>
+                                                        <option value="vetements">Vêtements (lots)</option>
+                                                        <option value="lampe">Lampes torches (unités)</option>
+                                                        <option value="jerrycan">Jerrycans (unités)</option>
+                                                    </optgroup>
+                                                    <optgroup label="Santé & Hygiène">
+                                                        <option value="medicaments">Médicaments (kits)</option>
+                                                        <option value="kit_hygiene">Kits d'hygiène (unités)</option>
+                                                        <option value="savon">Savon (unités)</option>
+                                                        <option value="desinfectant">Désinfectant (litres)</option>
+                                                        <option value="masque">Masques (boîtes)</option>
+                                                    </optgroup>
+                                                <?php endif; ?>
                                             </select>
                                             <div class="form-text">Sélectionnez le type de produit dont la ville a besoin</div>
                                         </div>
