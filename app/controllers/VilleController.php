@@ -1,8 +1,8 @@
 <?php
 namespace app\controllers;
 
-use App\models\Ville;
-use App\models\Region;
+use app\models\Ville;
+use app\models\Region;
 use flight\Engine;
 
 class VilleController extends BaseController {
