@@ -18,5 +18,17 @@
             Liste Besoins
         </a>
     </li>
+    <li class="nav-item mb-2">
+        <a class="nav-link text-white" href="/dons/formulaire">
+            <img src="/assets/icons/object1.png" alt="dons" class="icon-menu">
+            Saisir Dons
+        </a>
+    </li>
+    <li class="nav-item mb-2">
+        <a class="nav-link text-white" href="/dons/liste">
+            <img src="/assets/icons/object1.png" alt="dons" class="icon-menu">
+            Liste Dons
+        </a>
+    </li>
     
 </ul>

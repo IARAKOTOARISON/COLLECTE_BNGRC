@@ -27,4 +27,14 @@ $router->group('', function (Router $router) use ($app) {
 		$app->render('besoinListe');
 	});
 
+	// Page formulaire de saisie des dons
+	$router->get('/dons/formulaire', function () use ($app) {
+		$app->render('donFormulaire');
+	});
+
+	// Page liste des dons
+	$router->get('/dons/liste', function () use ($app) {
+		$app->render('donListe');
+	});
+
 }, [SecurityHeadersMiddleware::class]);
