@@ -16,6 +16,24 @@ class Ville {
     }
 
     /**
+     * Récupérer toutes les villes avec le nom de leur région
+     * @return array
+     */
+    public function getVillesAvecRegions() {
+        $query = "SELECT 
+                    v.id,
+                    v.nom as ville_nom,
+                    v.idRegion,
+                    r.nom as region_nom
+                  FROM ville v
+                  INNER JOIN region r ON v.idRegion = r.id
+                  ORDER BY r.nom, v.nom";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Récupérer une ville par son ID
      * @param int $id
      * @return array|null

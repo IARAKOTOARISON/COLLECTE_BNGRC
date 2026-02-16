@@ -31,6 +31,12 @@
         </a>
     </li>
     <li class="nav-item mb-2">
+        <a class="nav-link text-white" href="/villes/liste">
+            <img src="/assets/icons/home.png" alt="villes" class="icon-menu">
+            Liste Villes
+        </a>
+    </li>
+    <li class="nav-item mb-2">
         <a class="nav-link text-white" href="/simulation">
             <img src="/assets/icons/proposition.png" alt="simulation" class="icon-menu">
             Simulation Dispatch

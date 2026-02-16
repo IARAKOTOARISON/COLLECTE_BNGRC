@@ -3,6 +3,7 @@
 use app\controllers\TableauBordController;
 use app\controllers\BesoinController;
 use app\controllers\DonController;
+use app\controllers\VilleController;
 use app\middlewares\SecurityHeadersMiddleware;
 use flight\Engine;
 use flight\net\Router;
@@ -71,9 +72,15 @@ $router->group('', function(Router $router) use ($app) {
 		$controller->afficherListe();
 	});
 
-	// Route additionnelle pour lister les villes (peut rester)
+	$router->get('/villes/liste', function() use ($app) {
+		$db = $app->db();
+		$controller = new VilleController($db, $app);
+		$controller->afficherListe();
+	});
+
+	// Route additionnelle pour compatibilité (redirige vers /villes/liste)
 	$router->get('/listeVille', function() use ($app) {
-		$app->render('listeVille');
+		$app->redirect('/villes/liste');
 	});
 
 	
