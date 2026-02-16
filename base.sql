@@ -12,7 +12,7 @@ USE BNGRC;
 CREATE TABLE region (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nom VARCHAR(100) NOT NULL UNIQUE
-) ENGINE=InnoDB;
+); 
 
 -- ============================================
 -- Table: ville
@@ -23,7 +23,7 @@ CREATE TABLE ville (
     idRegion INT NOT NULL,
     FOREIGN KEY (idRegion) REFERENCES region(id),
     UNIQUE KEY unique_ville_region (nom, idRegion)
-) ENGINE=InnoDB;
+); 
 
 -- ============================================
 -- Table: categorieBesoin
@@ -31,7 +31,7 @@ CREATE TABLE ville (
 CREATE TABLE categorieBesoin (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nom VARCHAR(50) NOT NULL UNIQUE
-) ENGINE=InnoDB;
+); 
 
 -- ============================================
 -- Table: typeBesoin
@@ -42,7 +42,7 @@ CREATE TABLE typeBesoin (
     nom VARCHAR(50) NOT NULL,
     FOREIGN KEY (idCategorie) REFERENCES categorieBesoin(id),
     UNIQUE KEY unique_type_categorie (nom, idCategorie)
-) ENGINE=InnoDB;
+); 
 
 -- ============================================
 -- Table: produit
@@ -54,7 +54,7 @@ CREATE TABLE produit (
     prixUnitaire DECIMAL(15,2) NOT NULL,
     FOREIGN KEY (idCategorie) REFERENCES categorieBesoin(id),
     UNIQUE KEY unique_produit (nom, idCategorie)
-) ENGINE=InnoDB;
+); 
 
 -- ============================================
 -- Table: statusBesoin
@@ -62,7 +62,7 @@ CREATE TABLE produit (
 CREATE TABLE statusBesoin (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nom VARCHAR(50) NOT NULL UNIQUE
-) ENGINE=InnoDB;
+); 
 
 -- ============================================
 -- Table: besoin
@@ -78,7 +78,7 @@ CREATE TABLE besoin (
     FOREIGN KEY (idProduit) REFERENCES produit(id),
     FOREIGN KEY (idStatus) REFERENCES statusBesoin(id),
     INDEX idx_besoin_date (dateBesoin)
-) ENGINE=InnoDB;
+); 
 
 -- ============================================
 -- Table: statusDon
@@ -86,7 +86,7 @@ CREATE TABLE besoin (
 CREATE TABLE statusDon (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nom VARCHAR(50) NOT NULL UNIQUE
-) ENGINE=InnoDB;
+); 
 
 -- ============================================
 -- Table: don
@@ -107,7 +107,7 @@ CREATE TABLE don (
         (idProduit IS NOT NULL AND quantite IS NOT NULL AND montant IS NULL) OR
         (idProduit IS NULL AND montant IS NOT NULL AND quantite IS NULL)
     )
-) ENGINE=InnoDB;
+); 
 
 -- ============================================
 -- Table: statusDistribution
@@ -115,7 +115,7 @@ CREATE TABLE don (
 CREATE TABLE statusDistribution (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nom VARCHAR(50) NOT NULL UNIQUE
-) ENGINE=InnoDB;
+); 
 
 -- ============================================
 -- Table: distribution
@@ -139,7 +139,7 @@ CREATE TABLE distribution (
         (quantite IS NOT NULL AND montant IS NULL) OR
         (montant IS NOT NULL AND quantite IS NULL)
     )
-) ENGINE=InnoDB;
+); 
 
 
 
