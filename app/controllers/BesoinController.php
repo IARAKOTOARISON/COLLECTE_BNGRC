@@ -7,17 +7,14 @@ use app\models\StatusBesoin;
 use app\models\Besoin;
 use flight\Engine;
 
-class BesoinController {
-    private Engine $app;
-    private \PDO $db;
+class BesoinController extends BaseController {
     private Ville $villeModel;
     private Produit $produitModel;
     private StatusBesoin $statusBesoinModel;
     private Besoin $besoinModel;
 
     public function __construct(\PDO $db, Engine $app) {
-        $this->app = $app;
-        $this->db = $db;
+        parent::__construct($db, $app);
         $this->villeModel = new Ville($db);
         $this->produitModel = new Produit($db);
         $this->statusBesoinModel = new StatusBesoin($db);
@@ -46,7 +43,8 @@ class BesoinController {
             'produits' => $produits,
             'statusList' => $statusList,
             'success' => $success,
-            'error' => $error
+            'error' => $error,
+            'baseUrl' => $this->getBaseUrl()
         ]);
     }
 
@@ -97,7 +95,8 @@ class BesoinController {
         }
 
         // Rediriger vers le formulaire
-        $this->app->redirect('/besoins/formulaire');
+        $baseUrl = $this->getBaseUrl();
+        $this->app->redirect($baseUrl . '/besoins/formulaire');
     }
 
     /**
@@ -127,7 +126,8 @@ class BesoinController {
         
         $this->app->render('besoinListe', [
             'besoins' => $besoins,
-            'stats' => $stats
+            'stats' => $stats,
+            'baseUrl' => $this->getBaseUrl()
         ]);
     }
 }

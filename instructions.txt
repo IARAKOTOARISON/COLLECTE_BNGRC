@@ -1,0 +1,498 @@
+--------------------------------ROUTES.PHP---------------------------------------------
+<?php
+
+use app\controllers\ControllerLivraisons;
+use app\middlewares\SecurityHeadersMiddleware;
+use flight\Engine;
+use flight\net\Router;
+use app\models\Livraisons;
+use app\models\Zones;
+use app\models\Lieux;
+use app\models\Affectations;
+use app\models\Status;
+use app\models\Livreurs;
+use app\models\Vehicules;
+use app\controllers\ControllerParametres;
+use app\controllers\Controller;
+use app\controllers\ControllerBenefices;
+use app\models\Benefices;
+use app\models\Filtres;
+use app\models\Colis;
+
+/** 
+ * @var Router $router 
+ * @var Engine $app
+ */
+
+$router->group('', function(Router $router) {
+    global $app;
+
+    $router->get('/', function() use ($app) {
+        $controller = new ControllerLivraisons($app);
+        $controller->getLivraisons();
+    });
+
+    $router->get('/nouvelle', function() use ($app) {
+        // Calculer baseUrl comme dans le contrôleur
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
+        $basePath = dirname($scriptName);
+        if ($basePath === '/' || $basePath === '\\' || $basePath === '.') {
+            $basePath = '';
+        }
+
+        // Récupérer les listes depuis la base
+        $db = $app->get('db');
+        $zones = (new Zones($db))->getAll();
+        $lieux = (new Lieux($db))->getAll();
+        $affectations = (new Affectations($db))->getAllWithDetails();
+        $statuses = (new Status($db))->getAll();
+        $livreurs = (new Livreurs($db))->getAll();
+        $vehicules = (new Vehicules($db))->getAll();
+
+        $app->render('nouvelleLivraison', [ 
+            'baseUrl' => $basePath,
+            'zones' => $zones,
+            'lieux' => $lieux,
+            'affectations' => $affectations,
+            'statuses' => $statuses,
+            'livreurs' => $livreurs,
+            'vehicules' => $vehicules,
+        ]);
+    });
+
+    $router->post('/nouvelle', function() use ($app) {
+        $controller = new ControllerLivraisons($app);
+        $controller->saveLivraison();
+    });
+
+    // Update/Delete livraison
+    $router->get('/livraison/update', function() use ($app) {
+        $controller = new ControllerLivraisons($app);
+        $controller->selectUpdateForm();
+    });
+
+    $router->post('/livraison/update', function() use ($app) {
+        $controller = new ControllerLivraisons($app);
+        $controller->selectUpdatePost();
+    });
+
+    $router->get('/livraison/delete', function() use ($app) {
+        $controller = new ControllerLivraisons($app);
+        $controller->selectDeleteForm();
+    });
+
+    $router->post('/livraison/delete', function() use ($app) {
+        $controller = new ControllerLivraisons($app);
+        $controller->selectDeletePost();
+    });
+    
+    $router->get('/livraison/delete/@id', function($id) use ($app) {
+        $controller = new ControllerLivraisons($app);
+        $controller->deleteForm((int)$id);
+    });
+
+    $router->post('/livraison/delete/@id', function($id) use ($app) {
+        $controller = new ControllerLivraisons($app);
+        $controller->deletePost((int)$id);
+    });
+
+    $router->get('/livraison/update/@id', function($id) use ($app) {
+        $controller = new ControllerLivraisons($app);
+        $controller->updateForm((int)$id);
+    });
+
+    $router->post('/livraison/update/@id', function($id) use ($app) {
+        $controller = new ControllerLivraisons($app);
+        $controller->updatePost((int)$id);
+    });
+
+    // Paramètres: créations simples
+    $router->post('/param/zone', function() use ($app) {
+        $controller = new ControllerParametres($app);
+        $controller->saveZone();
+    });
+
+    $router->post('/param/affectation', function() use ($app) {
+        $controller = new ControllerParametres($app);
+        $controller->saveAffectation();
+    });
+
+    $router->post('/param/lieu', function() use ($app) {
+        $controller = new ControllerParametres($app);
+        $controller->saveLieu();
+    });
+
+    $router->post('/param/livreur', function() use ($app) {
+        $controller = new ControllerParametres($app);
+        $controller->saveLivreur();
+    });
+
+    $router->post('/param/vehicule', function() use ($app) {
+        $controller = new ControllerParametres($app);
+        $controller->saveVehicule();
+    });
+
+	$router->post('/param/colis', function() use ($app) {
+		$controller = new ControllerParametres($app);
+		$controller->saveColis();
+	});
+
+    // Route GET pour afficher le formulaire de rapport des bénéfices
+    $router->get('/Benefices', function() use ($app) {
+        $controller = new ControllerBenefices($app);
+        $controller->showBeneficesForm();
+    });
+
+    // Route POST pour traiter le formulaire de rapport des bénéfices
+    $router->post('/Benefices', function() use ($app) {
+        $controller = new ControllerBenefices($app);
+        
+        if (isset($_POST['code']) && !empty($_POST['code'])) {
+            $controller->getBeneficesByFiltre($_POST['code']);
+        } else {
+            $controller->getBeneficesByLivraison();
+        }
+    });
+
+}, [ SecurityHeadersMiddleware::class ]);
+
+
+---------------------------------------------SERVICES.PHP---------------------------------------------------------------------
+
+<?php
+
+use flight\Engine;
+use flight\database\PdoWrapper;
+use flight\debug\database\PdoQueryCapture;
+use flight\debug\tracy\TracyExtensionLoader;
+use Tracy\Debugger;
+
+/*********************************************
+ *         FlightPHP Service Setup           *
+ *********************************************
+ * This file registers services and integrations
+ * for your FlightPHP application. Edit as needed.
+ *
+ * @var array  $config  From config.php
+ * @var Engine $app     FlightPHP app instance
+ **********************************************/
+
+
+
+/*********************************************
+ *           Session Service Setup           *
+ *********************************************
+ * To enable sessions in FlightPHP, register the session service.
+ * Docs: https://docs.flightphp.com/awesome-plugins/session
+ *
+ * Example:
+ *   $app->register('session', \flight\Session::class, [
+ *       [
+ *           'prefix' 		=> 'flight_session_', 	  // Prefix for the session cookie
+ *           'save_path'    => 'path/to/my/sessions', // Path to save session files
+ *           // ...other options...
+ *       ]
+ *   ]);
+ *
+ * For advanced options, see the plugin documentation above.
+ **********************************************/
+
+/*********************************************
+ *           Tracy Debugger Setup            *
+ *********************************************
+ * Tracy is a powerful error handler and debugger for PHP.
+ * Docs: https://tracy.nette.org/
+ *
+ * Key Tracy configuration options:
+ *   - Debugger::enable([mode], [ip]);
+ *       - mode: Debugger::Development or Debugger::Production
+ *       - ip: restrict debug bar to specific IP(s)
+ *   - Debugger::$logDirectory: where error logs are stored
+ *   - Debugger::$strictMode: show all errors (true/E_ALL), or filter out deprecated notices
+ *   - Debugger::$showBar: show/hide debug bar (auto-detected, can be forced)
+ *   - Debugger::$maxLen: max length of dumped variables
+ *   - Debugger::$maxDepth: max depth of dumped structures
+ *   - Debugger::$editor: configure clickable file links (see docs)
+ *   - Debugger::$email: send error notifications to email
+ *
+ * Example Tracy setups:
+ *   Debugger::enable(); // Auto-detects environment
+ *   Debugger::enable(Debugger::Development); // Explicitly set environment
+ *   Debugger::enable('23.75.345.200'); // Restrict debug bar to specific IPs
+ *
+ * For more options, see https://tracy.nette.org/en/configuration
+ **********************************************/
+Debugger::enable(); // Auto-detects environment
+// Debugger::enable(Debugger::Development); // Explicitly set environment
+// Debugger::enable('23.75.345.200'); // Restrict debug bar to specific IPs
+Debugger::$logDirectory = __DIR__ . $ds . '..' . $ds . 'log'; // Log directory
+Debugger::$strictMode = true; // Show all errors (set to E_ALL & ~E_DEPRECATED for less noise)
+// Debugger::$maxLen = 1000; // Max length of dumped variables (default: 150)
+// Debugger::$maxDepth = 5; // Max depth of dumped structures (default: 3)
+// Debugger::$editor = 'vscode'; // Enable clickable file links in debug bar
+// Debugger::$email = 'your@email.com'; // Send error notifications
+if (Debugger::$showBar === true && php_sapi_name() !== 'cli') {
+	(new TracyExtensionLoader($app)); // Load FlightPHP Tracy extensions
+}
+
+/**********************************************
+ *           Database Service Setup           *
+ **********************************************/
+// Uncomment and configure the following for your database:
+
+// MySQL Example:
+//$dsn = 'mysql:host=' . $config['database']['host'] . ';dbname=' . $config['database']['dbname'] . ';charset=utf8mb4';
+
+// SQLite Example:
+// $dsn = 'sqlite:' . $config['database']['file_path'];
+
+// Register Flight::db() service
+// In development, use PdoQueryCapture to log queries; in production, use PdoWrapper for performance.
+// $pdoClass = Debugger::$showBar === true ? PdoQueryCapture::class : PdoWrapper::class;
+// $app->register('db', $pdoClass, [ $dsn, $config['database']['user'] ?? null, $config['database']['password'] ?? null ]);
+
+/**********************************************
+ *         Third-Party Integrations           *
+ **********************************************/
+// Google OAuth Example:
+// $app->register('google_oauth', Google_Client::class, [ $config['google_oauth'] ]);
+
+// Redis Example:
+// $app->register('redis', Redis::class, [ $config['redis']['host'], $config['redis']['port'] ]);
+
+// Add more service registrations below as needed
+
+-----------------------------------------CONTROLLER EXEMPLE--------------------------------------------------------------
+
+<?php
+
+namespace app\controllers;
+
+use flight\Engine;
+use app\models\Benefices;
+use app\models\Filtres;
+
+class ControllerBenefices {
+
+    protected Engine $app;
+
+    public function __construct($app) {
+        $this->app = $app;
+    }
+
+    protected function getBaseUrl() {
+        // Chemin depuis la racine du serveur
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
+
+        // Obtenir le répertoire du script (sans le nom du fichier)
+        $basePath = dirname($scriptName);
+
+        // Normaliser
+        if ($basePath === '/' || $basePath === '\\' || $basePath === '.') {
+            $basePath = '';
+        }
+        return $basePath;
+    }
+    
+    public function showBeneficesForm() {
+        $db = $this->app->get('db');
+        
+        if ($db === null) {
+            $this->app->render('error', [
+                'message' => 'La connexion à la base de données n\'est pas configurée.',
+                'details' => 'Veuillez vérifier la configuration dans config.php'
+            ]);
+            return;
+        }
+        
+        try {
+            // Récupérer les filtres
+            $filtresModel = new Filtres($db);
+            $filtres = $filtresModel->getAllFiltre();
+            
+            // Récupérer les bénéfices pour afficher le tableau du bas
+            $beneficesModel = new Benefices($db);
+            $benefices = $beneficesModel->getBeneficesByLivraison(); // CHANGÉ ICI
+
+            $this->app->render('Benefices', [
+                'filtre' => $filtres, 
+                'listeBenefice' => $benefices,
+                'baseUrl' => $this->getBaseUrl(),
+                'listeBeneficeByFiltre' => null
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->app->render('error', [
+                'message' => 'Erreur lors de la récupération des données.',
+                'details' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function getBeneficesByLivraison(){
+        $db = $this->app->get('db');
+        
+        if ($db === null) {
+            $this->app->render('error', [
+                'message' => 'La connexion à la base de données n\'est pas configurée.',
+                'details' => 'Veuillez vérifier la configuration dans config.php'
+            ]);
+            return;
+        }
+        
+        try {
+            $beneficesModel = new Benefices($db);
+            $benefices = $beneficesModel->getBeneficesByLivraison(); // CHANGÉ ICI
+            
+            // Récupérer aussi les filtres pour le formulaire
+            $filtresModel = new Filtres($db);
+            $filtres = $filtresModel->getAllFiltre();
+
+            $this->app->render('Benefices', [
+                'listeBenefice' => $benefices,
+                'filtre' => $filtres,
+                'listeBeneficeByFiltre' => null,
+                'baseUrl' => $this->getBaseUrl(),
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->app->render('error', [
+                'message' => 'Erreur lors de la récupération des données.',
+                'details' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getBeneficesByFiltre($code){
+        $db = $this->app->get('db');
+        
+        if ($db === null) {
+            $this->app->render('error', [
+                'message' => 'La connexion à la base de données n\'est pas configurée.',
+                'details' => 'Veuillez vérifier la configuration dans config.php'
+            ]);
+            return;
+        }
+        
+        try {
+            $beneficesModel = new Benefices($db);
+            $benefices = $beneficesModel->getBeneficesByFiltre($code);
+            
+            // Récupérer aussi les filtres pour le formulaire
+            $filtresModel = new Filtres($db);
+            $filtres = $filtresModel->getAllFiltre();
+            
+            // Récupérer aussi tous les bénéfices pour le tableau du bas
+            $allBenefices = $beneficesModel->getBeneficesByLivraison(); // CHANGÉ ICI
+
+            $this->app->render('Benefices', [
+                'listeBeneficeByFiltre' => $benefices,
+                'filtre' => $filtres,
+                'listeBenefice' => $allBenefices,
+                'baseUrl' => $this->getBaseUrl(),
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->app->render('error', [
+                'message' => 'Erreur lors de la récupération des données.',
+                'details' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getAllFiltre() {
+        $db = $this->app->get('db');
+        
+        if ($db === null) {
+            return [];
+        }
+        
+        try {
+            $filtresModel = new Filtres($db);
+            return $filtresModel->getAllFiltre();
+            
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+}
+
+
+-----------------------------------------VIEW--------------------------------------------------
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livraisons</title>
+    <?php $base = isset($baseUrl) ? rtrim($baseUrl, '/') : ''; ?>
+    <link rel="stylesheet" href="<?= htmlspecialchars($base) ?>/css/style.css">
+</head>
+<body>
+    <header class="nav">
+        <div class="nav__inner">
+            <div class="nav__brand">Livraison</div>
+            <nav class="nav__menu">
+                <a class="nav__link" href="<?= htmlspecialchars($base) ?>/">Liste de livraisons</a>
+                <a class="nav__link" href="<?= htmlspecialchars($base) ?>/Benefices">Rapport des bénéfices</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1>Liste des livraisons par date</h1>
+        <div class="actions">
+            <a class="btn btn-primary" href="<?= htmlspecialchars($base) ?>/nouvelle">+ Nouvelle livraison</a>
+            <a class="btn btn-secondary" href="<?= htmlspecialchars($base) ?>/livraison/update" style="margin-left:8px">Modifier une livraison</a>
+            <a class="btn btn-secondary" href="<?= htmlspecialchars($base) ?>/livraison/delete" style="margin-left:8px">Supprimer une livraison</a>
+        </div>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+						<th>Date</th>
+                        <th>Zone</th>
+                        <th>Livreur</th>
+                        <th>Véhicule (coût)</th>
+                        <th>Adresse départ</th>
+                        <th>Adresse destination</th>
+                        <th>Statut</th>
+                        <th>ID</th>
+                        <th>Nb colis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php if (!empty($listeLivraison) && is_array($listeLivraison)) : ?>
+                    <?php foreach ($listeLivraison as $lv) : ?>
+                        <tr>
+                            <td><?= htmlspecialchars($lv['date_livraison'] ?? '') ?></td>
+                            <td><?= htmlspecialchars($lv['zone_nom'] ?? '') ?></td>
+                            <td><?= htmlspecialchars($lv['livreur_nom'] ?? '') ?></td>
+                            <td><?= isset($lv['vehicule_cout']) ? htmlspecialchars(number_format((float)$lv['vehicule_cout'], 2, '.', ' ')) : '' ?></td>
+                            <td><?= htmlspecialchars($lv['adresse_depart_nom'] ?? '') ?></td>
+                            <td><?= htmlspecialchars($lv['adresse_destination_nom'] ?? '') ?></td>
+                            <td class="status <?= htmlspecialchars(strtolower($lv['statut_nom'] ?? '')) ?>">
+                                <?= htmlspecialchars($lv['statut_nom'] ?? '') ?>
+                            </td>
+                            <td><?= htmlspecialchars($lv['id'] ?? '') ?></td>
+                            <td><?= htmlspecialchars((string)($lv['nb_colis'] ?? 0)) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else : ?>
+                    <tr>
+                        <td class="empty" colspan="9">Aucune livraison trouvée</td>
+                    </tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        
+    </main>
+
+</body>
+</html>
+                                  
+

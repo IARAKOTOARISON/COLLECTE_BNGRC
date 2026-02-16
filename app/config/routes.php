@@ -18,7 +18,8 @@ $router->group('', function(Router $router) use ($app) {
 
 	// Accueil: garder '/' comme alias mais exposer '/accueil' pour correspondre au menu
 	$router->get('/', function() use ($app) {
-		$app->render('accueil');
+		$baseUrl = $app->get('baseUrl') ?? '';
+		$app->render('accueil', ['baseUrl' => $baseUrl]);
 	});
 
 
@@ -89,7 +90,8 @@ $router->group('', function(Router $router) use ($app) {
 
 	// Route additionnelle pour compatibilité (redirige vers /villes/liste)
 	$router->get('/listeVille', function() use ($app) {
-		$app->redirect('/villes/liste');
+		$baseUrl = $app->get('baseUrl') ?? '';
+		$app->redirect($baseUrl . '/villes/liste');
 	});
 
 	

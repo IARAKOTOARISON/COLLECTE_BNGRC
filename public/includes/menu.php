@@ -1,44 +1,45 @@
+<?php $base = isset($baseUrl) ? rtrim($baseUrl, '/') : ''; ?>
 <h5 class="mb-3">Menu</h5>
 <ul class="nav flex-column">
     <li class="nav-item mb-2">
-        <a class="nav-link text-white active" href="/accueil">
-            <img src="/assets/icons/home.png" alt="home" class="icon-menu">
+        <a class="nav-link text-white active" href="<?= htmlspecialchars($base) ?>/accueil">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/home.png" alt="home" class="icon-menu">
             Accueil
         </a>
     </li>
     <li class="nav-item mb-2">
-        <a class="nav-link text-white" href="/besoins/formulaire">
-            <img src="/assets/icons/boxes.png" alt="home" class="icon-menu">
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/besoins/formulaire">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/boxes.png" alt="home" class="icon-menu">
             Saisir Besoins
         </a>
     </li>
     <li class="nav-item mb-2">
-        <a class="nav-link text-white" href="/besoins/liste">
-            <img src="/assets/icons/boxes.png" alt="home" class="icon-menu">
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/besoins/liste">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/boxes.png" alt="home" class="icon-menu">
             Liste Besoins
         </a>
     </li>
     <li class="nav-item mb-2">
-        <a class="nav-link text-white" href="/dons/formulaire">
-            <img src="/assets/icons/object1.png" alt="dons" class="icon-menu">
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/dons/formulaire">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/object1.png" alt="dons" class="icon-menu">
             Saisir Dons
         </a>
     </li>
     <li class="nav-item mb-2">
-        <a class="nav-link text-white" href="/dons/liste">
-            <img src="/assets/icons/object1.png" alt="dons" class="icon-menu">
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/dons/liste">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/object1.png" alt="dons" class="icon-menu">
             Liste Dons
         </a>
     </li>
     <li class="nav-item mb-2">
-        <a class="nav-link text-white" href="/villes/liste">
-            <img src="/assets/icons/home.png" alt="villes" class="icon-menu">
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/villes/liste">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/home.png" alt="villes" class="icon-menu">
             Liste Villes
         </a>
     </li>
     <li class="nav-item mb-2">
-        <a class="nav-link text-white" href="/simulation">
-            <img src="/assets/icons/proposition.png" alt="simulation" class="icon-menu">
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/simulation">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/proposition.png" alt="simulation" class="icon-menu">
             Simulation Dispatch
         </a>
     </li>

@@ -4,19 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/assets/css/style.css" rel="stylesheet">
+    <?php $base = isset($baseUrl) ? rtrim($baseUrl, '/') : ''; ?>
+    <link href="<?= htmlspecialchars($base) ?>/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="<?= htmlspecialchars($base) ?>/assets/css/style.css" rel="stylesheet">
     <title>Saisie des Besoins - BNGRC</title>
 </head>
 
 <body class="d-flex flex-column min-vh-100">
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/includes/header.php'; ?>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/header.php'; ?>
     
     <div class="container-fluid flex-grow-1">
         <div class="row h-100">
            
             <nav class="col-md-3 col-lg-2 bg-dark text-white p-3">
-                <?php include $_SERVER['DOCUMENT_ROOT'] . '/includes/menu.php'; ?>
+                <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/menu.php'; ?>
             </nav>
             
            
@@ -24,7 +25,7 @@
                 <div class="container-fluid">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h1 class="fw-bold">Saisie des Besoins par Ville</h1>
-                        <a href="/besoins/liste" class="btn btn-secondary">
+                        <a href="<?= htmlspecialchars($base) ?>/besoins/liste" class="btn btn-secondary">
                             Voir la liste des besoins
                         </a>
                     </div>
@@ -51,7 +52,7 @@
                                     <h4 class="mb-0">Enregistrer un nouveau besoin</h4>
                                 </div>
                                 <div class="card-body">
-                                    <form id="formBesoin" method="POST" action="/besoins/ajouter">
+                                    <form id="formBesoin" method="POST" action="<?= htmlspecialchars($base) ?>/besoins/ajouter">
                                         
                                         <!-- Sélection de la ville -->
                                         <div class="mb-3">
@@ -147,9 +148,9 @@
         </div>
     </div>
     
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/includes/footer.php'; ?>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/footer.php'; ?>
     
-    <script src="/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
         // Supprimer le preventDefault et laisser le formulaire se soumettre normalement
         // Le script pour les unités n'est plus nécessaire car on utilise les IDs des produits

@@ -6,14 +6,7 @@ use App\models\Don;
 use App\models\Distribution;
 use flight\Engine;
 
-class SimulationController {
-    private $db;
-    private $app;
-
-    public function __construct(\PDO $db, Engine $app) {
-        $this->db = $db;
-        $this->app = $app;
-    }
+class SimulationController extends BaseController {
 
     /**
      * Afficher la page de simulation avec dispatch automatique
@@ -62,7 +55,8 @@ class SimulationController {
             'distributions' => $distributionsProposees,
             'stats' => $stats,
             'success' => $success,
-            'error' => $error
+            'error' => $error,
+            'baseUrl' => $this->getBaseUrl()
         ]);
     }
 
@@ -113,7 +107,8 @@ class SimulationController {
         }
         
         // Rediriger vers la page de simulation
-        $this->app->redirect('/simulation');
+        $baseUrl = $this->getBaseUrl();
+        $this->app->redirect($baseUrl . '/simulation');
     }
 
     /**

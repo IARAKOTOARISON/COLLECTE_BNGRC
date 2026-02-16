@@ -86,6 +86,17 @@ $pdoClass = Debugger::$showBar === true ? PdoQueryCapture::class : PdoWrapper::c
 $app->register('db', $pdoClass, [ $dsn, $config['database']['user'] ?? null, $config['database']['password'] ?? null ]);
 
 /**********************************************
+ *         Base URL Service Setup             *
+ **********************************************/
+// Calculate base URL for the application
+$scriptName = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
+$basePath = dirname($scriptName);
+if ($basePath === '/' || $basePath === '\\' || $basePath === '.') {
+    $basePath = '';
+}
+$app->set('baseUrl', $basePath);
+
+/**********************************************
  *         Third-Party Integrations           *
  **********************************************/
 // Google OAuth Example:

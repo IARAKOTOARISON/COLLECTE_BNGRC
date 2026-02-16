@@ -7,14 +7,7 @@ use App\models\Don;
 use App\models\Distribution;
 use flight\Engine;
 
-class TableauBordController {
-    private $db;
-    private $app;
-
-    public function __construct(\PDO $db, Engine $app) {
-        $this->db = $db;
-        $this->app = $app;
-    }
+class TableauBordController extends BaseController {
 
     /** Préparer les données pour le tableau de bord */
     public function getAllAboutVille() {
@@ -84,7 +77,8 @@ class TableauBordController {
         // Rendu vers la vue
         $this->app->render('tableauBord', [
             'aboutVille' => $besoinsAvecStats,
-            'stats' => $stats
+            'stats' => $stats,
+            'baseUrl' => $this->getBaseUrl()
         ]);
     }
     

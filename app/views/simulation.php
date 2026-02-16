@@ -4,19 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/assets/css/style.css" rel="stylesheet">
+    <?php $base = isset($baseUrl) ? rtrim($baseUrl, '/') : ''; ?>
+    <link href="<?= htmlspecialchars($base) ?>/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="<?= htmlspecialchars($base) ?>/assets/css/style.css" rel="stylesheet">
     <title>Simulation de Dispatch Manuel - BNGRC</title>
 </head>
 
 <body class="d-flex flex-column min-vh-100">
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/includes/header.php'; ?>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/header.php'; ?>
     
     <div class="container-fluid flex-grow-1">
         <div class="row h-100">
            
             <nav class="col-md-3 col-lg-2 bg-dark text-white p-3">
-                <?php include $_SERVER['DOCUMENT_ROOT'] . '/includes/menu.php'; ?>
+                <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/menu.php'; ?>
             </nav>
             
            
@@ -190,7 +191,7 @@
                         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                             <h4 class="mb-0">3. Distributions Proposées Automatiquement</h4>
                             <?php if (!empty($distributions)): ?>
-                                <form method="POST" action="/simulation/confirmer" style="display: inline;">
+                                <form method="POST" action="<?= htmlspecialchars($base) ?>/simulation/confirmer" style="display: inline;">
                                     <button type="submit" class="btn btn-success btn-lg" onclick="return confirm('Confirmer l\'enregistrement de <?= count($distributions) ?> distribution(s) en base de données ?');">
                                         ✓ Confirmer et Enregistrer
                                     </button>
@@ -278,9 +279,9 @@
         </div>
     </div>
     
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/includes/footer.php'; ?>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/footer.php'; ?>
     
-    <script src="/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

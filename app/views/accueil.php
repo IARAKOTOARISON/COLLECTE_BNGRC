@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bienvenue</title>
+    <?php $base = isset($baseUrl) ? rtrim($baseUrl, '/') : ''; ?>
     <style>
         :root{ --accent:#2b8cff; }
         html,body{ height:100%; margin:0; font-family:Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif; }
@@ -14,7 +15,7 @@
             justify-content:center;
             text-align:center;
             color:#fff;
-            background-image: url('/assets/images/accueil.jpg');
+            background-image: url('<?= htmlspecialchars($base) ?>/assets/images/accueil.jpg');
             background-size:cover;
             background-position:center center;
             position:relative;
@@ -43,7 +44,7 @@
             <h3>Nous avons besoin de votre aide</h3>
             <p>Votre contribution est essentielle pour répondre aux besoins de la communauté.</p>
             <p>
-                <a class="btn-start" href="/tableauBord">Commencer</a>
+                <a class="btn-start" href="<?= htmlspecialchars($base) ?>/tableauBord">Commencer</a>
             </p>
         </div>
     </section>

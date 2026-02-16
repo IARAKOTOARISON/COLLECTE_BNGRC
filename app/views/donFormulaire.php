@@ -4,19 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/assets/css/style.css" rel="stylesheet">
+    <?php $base = isset($baseUrl) ? rtrim($baseUrl, '/') : ''; ?>
+    <link href="<?= htmlspecialchars($base) ?>/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="<?= htmlspecialchars($base) ?>/assets/css/style.css" rel="stylesheet">
     <title>Saisie des Dons - BNGRC</title>
 </head>
 
 <body class="d-flex flex-column min-vh-100">
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/includes/header.php'; ?>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/header.php'; ?>
     
     <div class="container-fluid flex-grow-1">
         <div class="row h-100">
            
             <nav class="col-md-3 col-lg-2 bg-dark text-white p-3">
-                <?php include $_SERVER['DOCUMENT_ROOT'] . '/includes/menu.php'; ?>
+                <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/menu.php'; ?>
             </nav>
             
            
@@ -24,7 +25,7 @@
                 <div class="container-fluid">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h1 class="fw-bold">Enregistrement des Dons</h1>
-                        <a href="/dons/liste" class="btn btn-secondary">
+                        <a href="<?= htmlspecialchars($base) ?>/dons/liste" class="btn btn-secondary">
                             Voir la liste des dons
                         </a>
                     </div>
@@ -51,7 +52,7 @@
                                     <h4 class="mb-0">Enregistrer un nouveau don</h4>
                                 </div>
                                 <div class="card-body">
-                                    <form id="formDon" method="POST" action="/dons/ajouter">
+                                    <form id="formDon" method="POST" action="<?= htmlspecialchars($base) ?>/dons/ajouter">
                                         
                                         <!-- Type de don -->
                                         <div class="mb-4">
@@ -210,9 +211,9 @@
         </div>
     </div>
     
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/includes/footer.php'; ?>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/footer.php'; ?>
     
-    <script src="/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
         // Gestion du type de don
         const donNature = document.getElementById('donNature');
@@ -285,10 +286,8 @@
             }
         });
 
-        // Validation du formulaire
         document.getElementById('formDon').addEventListener('submit', function(e) {
-            // Laisser le formulaire se soumettre normalement
-            // Le traitement sera fait côté serveur
+           
         });
     </script>
 </body>

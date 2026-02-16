@@ -5,14 +5,7 @@ use App\models\Ville;
 use App\models\Region;
 use flight\Engine;
 
-class VilleController {
-    private $db;
-    private $app;
-
-    public function __construct(\PDO $db, Engine $app) {
-        $this->db = $db;
-        $this->app = $app;
-    }
+class VilleController extends BaseController {
 
     /**
      * Afficher la liste des villes avec leurs régions
@@ -54,7 +47,8 @@ class VilleController {
             'villes' => $villes,
             'stats' => $stats,
             'success' => $success,
-            'error' => $error
+            'error' => $error,
+            'baseUrl' => $this->getBaseUrl()
         ]);
     }
 }

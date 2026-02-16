@@ -7,17 +7,14 @@ use app\models\StatusDon;
 use app\models\Don;
 use flight\Engine;
 
-class DonController {
-    private Engine $app;
-    private \PDO $db;
+class DonController extends BaseController {
     private Ville $villeModel;
     private Produit $produitModel;
     private StatusDon $statusDonModel;
     private Don $donModel;
 
     public function __construct(\PDO $db, Engine $app) {
-        $this->app = $app;
-        $this->db = $db;
+        parent::__construct($db, $app);
         $this->villeModel = new Ville($db);
         $this->produitModel = new Produit($db);
         $this->statusDonModel = new StatusDon($db);
@@ -46,7 +43,8 @@ class DonController {
             'produits' => $produits,
             'statusList' => $statusList,
             'success' => $success,
-            'error' => $error
+            'error' => $error,
+            'baseUrl' => $this->getBaseUrl()
         ]);
     }
 
@@ -130,7 +128,8 @@ class DonController {
         }
 
         // Rediriger vers le formulaire
-        $this->app->redirect('/dons/formulaire');
+        $baseUrl = $this->getBaseUrl();
+        $this->app->redirect($baseUrl . '/dons/formulaire');
     }
 
     /**
@@ -158,7 +157,8 @@ class DonController {
         
         $this->app->render('donListe', [
             'dons' => $dons,
-            'stats' => $stats
+            'stats' => $stats,
+            'baseUrl' => $this->getBaseUrl()
         ]);
     }
 }
