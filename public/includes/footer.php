@@ -13,14 +13,14 @@
       <div class="row">
         <div class="col-md-4">
           <p class="mb-0"> <img src="/assets/icons/github.png" alt="home" class="icon-menu">
-            Github link : <a href="https://github.com/gaelleGilbertine/revision_web">revision_web</a></p>
+            Github link : <a href="https://github.com/IARAKOTOARISON/COLLECTE_BNGRC">COLLECTE_BNGRC</a></p>
         </div>
         <div class="col-md-4">
           <p class="mb-0"> <img src="/assets/icons/todo.png" alt="home" class="icon-menu">
-            Todolist link (Google sheets) : <a href="#">Click here to visit</a></p>
+            Todolist link (Google sheets) : <a href="https://docs.google.com/spreadsheets/d/1G6LAN1vyIkRXUVdUVnAbAOy-bC0IAWD4Wfuuv4bpGCk/edit?usp=sharing">Click here to visit</a></p>
         </div>
         <div class="col-md-4">
-          <p style="color:red ">REVISION FINAL S3 - FEVRIER 2026</p>
+          <p style="color:red ">EXAMEN FINAL S3 - FEVRIER 2026</p>
         </div>
       </div>
     </div>
