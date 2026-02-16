@@ -12,9 +12,12 @@ use flight\net\Router;
 
 $router->group('', function(Router $router) use ($app) {
 
+	// Accueil: garder '/' comme alias mais exposer '/accueil' pour correspondre au menu
 	$router->get('/', function() use ($app) {
 		$app->render('accueil');
 	});
+
+
 
 	///////////////////////////////////////////////////////////////////////tableau de bord
 
@@ -23,5 +26,36 @@ $router->group('', function(Router $router) use ($app) {
 		$controller = new TableauBordController($db, $app);
 		$controller->getAllAboutVille();
 	});
+
+	$router->get('/simulation', function () use ($app) {
+		$app->render('simulation');
+	});
+
+	// Pages statiques / formulaires / listes — routes alignées avec le menu
+
+	$router->get('/besoins/formulaire', function() use ($app) {
+		$app->render('besoinFormulaire');
+	});
+
+	$router->get('/besoins/liste', function() use ($app) {
+		$app->render('besoinListe');
+	});
+
+	$router->get('/dons/formulaire', function() use ($app) {
+		$app->render('donFormulaire');
+	});
+
+	$router->get('/dons/liste', function() use ($app) {
+		$app->render('donListe');
+	});
+
+	// Route additionnelle pour lister les villes (peut rester)
+	$router->get('/listeVille', function() use ($app) {
+		$app->render('listeVille');
+	});
+
+	
+
+
 	
 }, [ SecurityHeadersMiddleware::class ]);

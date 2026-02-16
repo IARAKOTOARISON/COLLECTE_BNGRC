@@ -1,23 +1,66 @@
 <?php
-namespace App\Models;
+namespace App\models;
 
 class Ville {
-    private \PDO $db;
+    private $db;
 
     public function __construct(\PDO $db) {
         $this->db = $db;
     }
 
-    /** Récupérer toutes les villes avec leur région */
-    public function getAll(): array {
-        $query = "
-            SELECT v.id, v.nom AS ville, r.nom AS region
-            FROM ville v
-            JOIN region r ON v.idRegion = r.id
-            ORDER BY v.nom ASC
-        ";
+    public function getAllVilles() {
+        $query = "SELECT * FROM ville";
         $stmt = $this->db->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
+
+    /**
+     * Récupérer une ville par son ID
+     * @param int $id
+     * @return array|null
+     */
+    public function getById($id) {
+        $query = "SELECT * FROM ville WHERE id = :id";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
+     * Créer une nouvelle ville
+     * @param string $nom
+     * @param int $idRegion
+     * @return bool
+     */
+    public function create($nom, $idRegion) {
+        $query = "INSERT INTO ville (nom, idRegion) VALUES (:nom, :idRegion)";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([':nom' => $nom, ':idRegion' => $idRegion]);
+    }
+
+    /**
+     * Mettre à jour une ville
+     * @param int $id
+     * @param string $nom
+     * @param int $idRegion
+     * @return bool
+     */
+    public function update($id, $nom, $idRegion) {
+        $query = "UPDATE ville SET nom = :nom, idRegion = :idRegion WHERE id = :id";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([':id' => $id, ':nom' => $nom, ':idRegion' => $idRegion]);
+    }
+
+    /**
+     * Supprimer une ville
+     * @param int $id
+     * @return bool
+     */
+    public function delete($id) {
+        $query = "DELETE FROM ville WHERE id = :id";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([':id' => $id]);
+    }
 }
+?>
