@@ -19,7 +19,6 @@
                 <?php include $_SERVER['DOCUMENT_ROOT'] . '/includes/menu.php'; ?>
             </nav>
             
-           
             <main class="col-md-9 col-lg-10 p-4">
                 <div class="container-fluid">
                     <h1 class="fw-bold mb-4">Tableau de Bord - Collecte BNGRC</h1>
@@ -30,7 +29,7 @@
                             <div class="card text-white bg-primary">
                                 <div class="card-body">
                                     <h5 class="card-title">Villes affectées</h5>
-                                    <h2 class="display-4">12</h2>
+                                    <h2 class="display-4"><?= count(array_unique(array_column($aboutVille, 'ville'))) ?></h2>
                                 </div>
                             </div>
                         </div>
@@ -38,7 +37,9 @@
                             <div class="card text-white bg-success">
                                 <div class="card-body">
                                     <h5 class="card-title">Total des dons collectés</h5>
-                                    <h2 class="display-4">245</h2>
+                                    <h2 class="display-4">
+                                        <?= array_sum(array_map(fn($d) => $d['quantite'] ?? $d['montant'], $aboutVille)) ?>
+                                    </h2>
                                 </div>
                             </div>
                         </div>
@@ -46,7 +47,9 @@
                             <div class="card text-white bg-warning">
                                 <div class="card-body">
                                     <h5 class="card-title">Besoins en attente</h5>
-                                    <h2 class="display-4">87</h2>
+                                    <h2 class="display-4">
+                                        <?= array_sum(array_map(fn($d) => $d['reste'] ?? 0, $aboutVille)) ?>
+                                    </h2>
                                 </div>
                             </div>
                         </div>
@@ -71,204 +74,47 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <th scope="row">1</th>
-                                            <td><strong>Antananarivo</strong></td>
-                                            <td>
-                                                <span class="badge bg-info me-1">Eau potable</span>
-                                                <span class="badge bg-info me-1">Nourriture</span>
-                                                <span class="badge bg-info">Médicaments</span>
-                                            </td>
-                                            <td>500 unités</td>
-                                            <td>
-                                                <span class="text-success fw-bold">350 unités</span>
-                                                <div class="progress mt-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 70%"></div>
-                                                </div>
-                                            </td>
-                                            <td><span class="badge bg-warning">En cours</span></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">2</th>
-                                            <td><strong>Toamasina</strong></td>
-                                            <td>
-                                                <span class="badge bg-info me-1">Couvertures</span>
-                                                <span class="badge bg-info">Tentes</span>
-                                            </td>
-                                            <td>200 unités</td>
-                                            <td>
-                                                <span class="text-success fw-bold">200 unités</span>
-                                                <div class="progress mt-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
-                                                </div>
-                                            </td>
-                                            <td><span class="badge bg-success">Complet</span></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">3</th>
-                                            <td><strong>Mahajanga</strong></td>
-                                            <td>
-                                                <span class="badge bg-info me-1">Vêtements</span>
-                                                <span class="badge bg-info me-1">Eau potable</span>
-                                                <span class="badge bg-info">Kits d'hygiène</span>
-                                            </td>
-                                            <td>300 unités</td>
-                                            <td>
-                                                <span class="text-danger fw-bold">85 unités</span>
-                                                <div class="progress mt-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-danger" role="progressbar" style="width: 28%"></div>
-                                                </div>
-                                            </td>
-                                            <td><span class="badge bg-danger">Urgent</span></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">4</th>
-                                            <td><strong>Fianarantsoa</strong></td>
-                                            <td>
-                                                <span class="badge bg-info me-1">Nourriture</span>
-                                                <span class="badge bg-info">Médicaments</span>
-                                            </td>
-                                            <td>400 unités</td>
-                                            <td>
-                                                <span class="text-warning fw-bold">240 unités</span>
-                                                <div class="progress mt-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 60%"></div>
-                                                </div>
-                                            </td>
-                                            <td><span class="badge bg-warning">En cours</span></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">5</th>
-                                            <td><strong>Toliara</strong></td>
-                                            <td>
-                                                <span class="badge bg-info me-1">Eau potable</span>
-                                                <span class="badge bg-info">Tentes</span>
-                                            </td>
-                                            <td>250 unités</td>
-                                            <td>
-                                                <span class="text-danger fw-bold">50 unités</span>
-                                                <div class="progress mt-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-danger" role="progressbar" style="width: 20%"></div>
-                                                </div>
-                                            </td>
-                                            <td><span class="badge bg-danger">Urgent</span></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">6</th>
-                                            <td><strong>Antsiranana</strong></td>
-                                            <td>
-                                                <span class="badge bg-info me-1">Couvertures</span>
-                                                <span class="badge bg-info me-1">Vêtements</span>
-                                                <span class="badge bg-info">Nourriture</span>
-                                            </td>
-                                            <td>350 unités</td>
-                                            <td>
-                                                <span class="text-success fw-bold">280 unités</span>
-                                                <div class="progress mt-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 80%"></div>
-                                                </div>
-                                            </td>
-                                            <td><span class="badge bg-warning">En cours</span></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">7</th>
-                                            <td><strong>Antsirabe</strong></td>
-                                            <td>
-                                                <span class="badge bg-info me-1">Médicaments</span>
-                                                <span class="badge bg-info">Kits d'hygiène</span>
-                                            </td>
-                                            <td>180 unités</td>
-                                            <td>
-                                                <span class="text-warning fw-bold">120 unités</span>
-                                                <div class="progress mt-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 67%"></div>
-                                                </div>
-                                            </td>
-                                            <td><span class="badge bg-warning">En cours</span></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">8</th>
-                                            <td><strong>Morondava</strong></td>
-                                            <td>
-                                                <span class="badge bg-info me-1">Eau potable</span>
-                                                <span class="badge bg-info me-1">Nourriture</span>
-                                                <span class="badge bg-info">Tentes</span>
-                                            </td>
-                                            <td>220 unités</td>
-                                            <td>
-                                                <span class="text-danger fw-bold">45 unités</span>
-                                                <div class="progress mt-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-danger" role="progressbar" style="width: 20%"></div>
-                                                </div>
-                                            </td>
-                                            <td><span class="badge bg-danger">Urgent</span></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">9</th>
-                                            <td><strong>Ambositra</strong></td>
-                                            <td>
-                                                <span class="badge bg-info me-1">Vêtements</span>
-                                                <span class="badge bg-info">Couvertures</span>
-                                            </td>
-                                            <td>150 unités</td>
-                                            <td>
-                                                <span class="text-success fw-bold">150 unités</span>
-                                                <div class="progress mt-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
-                                                </div>
-                                            </td>
-                                            <td><span class="badge bg-success">Complet</span></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">10</th>
-                                            <td><strong>Manakara</strong></td>
-                                            <td>
-                                                <span class="badge bg-info me-1">Médicaments</span>
-                                                <span class="badge bg-info me-1">Kits d'hygiène</span>
-                                                <span class="badge bg-info">Eau potable</span>
-                                            </td>
-                                            <td>280 unités</td>
-                                            <td>
-                                                <span class="text-warning fw-bold">165 unités</span>
-                                                <div class="progress mt-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 59%"></div>
-                                                </div>
-                                            </td>
-                                            <td><span class="badge bg-warning">En cours</span></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">11</th>
-                                            <td><strong>Sambava</strong></td>
-                                            <td>
-                                                <span class="badge bg-info me-1">Nourriture</span>
-                                                <span class="badge bg-info">Tentes</span>
-                                            </td>
-                                            <td>190 unités</td>
-                                            <td>
-                                                <span class="text-danger fw-bold">38 unités</span>
-                                                <div class="progress mt-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-danger" role="progressbar" style="width: 20%"></div>
-                                                </div>
-                                            </td>
-                                            <td><span class="badge bg-danger">Urgent</span></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">12</th>
-                                            <td><strong>Taolagnaro</strong></td>
-                                            <td>
-                                                <span class="badge bg-info me-1">Eau potable</span>
-                                                <span class="badge bg-info me-1">Vêtements</span>
-                                                <span class="badge bg-info">Couvertures</span>
-                                            </td>
-                                            <td>320 unités</td>
-                                            <td>
-                                                <span class="text-success fw-bold">256 unités</span>
-                                                <div class="progress mt-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 80%"></div>
-                                                </div>
-                                            </td>
-                                            <td><span class="badge bg-warning">En cours</span></td>
-                                        </tr>
+                                        <?php $i = 1; ?>
+                                        <?php foreach ($aboutVille as $besoin): ?>
+                                            <?php
+                                                $ville = htmlspecialchars($besoin['ville']);
+                                                $produit = htmlspecialchars($besoin['produit']);
+                                                $quantite = $besoin['quantite'] ?? null;
+                                                $montant = $besoin['montant'] ?? null;
+                                                $reste = $besoin['reste'] ?? 0;
+                                                $recu = ($quantite ?? $montant) - $reste;
+                                                $progress = ($quantite ?? $montant) > 0 ? round(($recu / ($quantite ?? $montant)) * 100) : 0;
+
+                                                $progressClass = match(true) {
+                                                    $progress >= 100 => 'bg-success',
+                                                    $progress >= 50 => 'bg-warning',
+                                                    default => 'bg-danger',
+                                                };
+
+                                                $statut = match(true) {
+                                                    $progress >= 100 => 'Complet',
+                                                    $progress >= 50 => 'En cours',
+                                                    default => 'Urgent',
+                                                };
+                                            ?>
+                                            <tr>
+                                                <th scope="row"><?= $i++ ?></th>
+                                                <td><strong><?= $ville ?></strong></td>
+                                                <td><span class="badge bg-info"><?= $produit ?></span></td>
+                                                <td>
+                                                    <?= $quantite ? $quantite . ' unités' : $montant . ' Ar' ?>
+                                                </td>
+                                                <td>
+                                                    <span class="text-<?= $progressClass ?> fw-bold"><?= $recu ?> <?= $quantite ? 'unités' : 'Ar' ?></span>
+                                                    <div class="progress mt-1" style="height: 8px;">
+                                                        <div class="progress-bar <?= $progressClass ?>" role="progressbar" style="width: <?= $progress ?>%"></div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge <?= $progressClass ?>"><?= $statut ?></span>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
                                     </tbody>
                                 </table>
                             </div>
@@ -290,6 +136,7 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
             </main>
         </div>
@@ -299,8 +146,5 @@
     
     <script src="/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
-
-
-
 
 </html>

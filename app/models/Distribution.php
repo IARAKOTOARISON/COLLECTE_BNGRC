@@ -1,37 +1,97 @@
 <?php
-namespace App\models;
+namespace App\Models;
 
 class Distribution {
-    private $db;
+    private \PDO $db;
 
     public function __construct(\PDO $db) {
         $this->db = $db;
     }
 
-    /**
-     * Récupérer toutes les distributions
-     * @return array
-     */
-    public function getAll() {
-        $query = "
-            SELECT d.id, d.idBesoin, d.idDon, d.idVille, d.quantite, d.montant, d.dateDistribution, d.idStatusDistribution,
-                   v.nom AS ville,
-                   b.idProduit AS produitId, p.nom AS produit,
-                   s.nom AS statutBesoin,
-                   ds.nom AS statutDistribution
-            FROM distribution d
-            INNER JOIN ville v ON d.idVille = v.id
-            INNER JOIN besoin b ON d.idBesoin = b.id
-            INNER JOIN don dn ON d.idDon = dn.id
-            INNER JOIN produit p ON b.idProduit = p.id
-            INNER JOIN statusBesoin s ON b.idStatus = s.id
-            INNER JOIN statusDistribution ds ON d.idStatusDistribution = ds.id
-            ORDER BY d.dateDistribution ASC
-        ";
+    /** Trier un tableau par date */
+    private function sortByDate(array $array, string $key, string $order = 'ASC'): array {
+        usort($array, function($a, $b) use ($key, $order) {
+            $timeA = strtotime($a[$key]);
+            $timeB = strtotime($b[$key]);
+            return ($order === 'ASC') ? ($timeA - $timeB) : ($timeB - $timeA);
+        });
+        return $array;
+    }
 
-        $stmt = $this->db->prepare($query);
-        $stmt->execute();
+    /** Filtrer besoins par ville */
+    private function filterBesoinsByVille(array $besoins, int $villeId): array {
+        return array_filter($besoins, fn($b) => $b['idVille'] == $villeId);
+    }
 
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    /** Déterminer type de besoin (quantité ou montant) */
+    private function getTypeBesoin(array $besoin): string {
+        return isset($besoin['quantite']) ? 'quantite' : 'montant';
+    }
+
+    /** Distribuer un don à un besoin */
+    private function distribuerBesoinDon(array &$besoin, array &$don, string $typeBesoin): ?array {
+        $besoinRestant = $besoin[$typeBesoin] ?? 0;
+        $donRestant = $don[$typeBesoin] ?? 0;
+
+        if ($besoinRestant <= 0 || $donRestant <= 0) return null;
+
+        $attribue = min($besoinRestant, $donRestant);
+
+        // Mettre à jour besoin et don
+        $besoin[$typeBesoin] -= $attribue;
+        $don[$typeBesoin] -= $attribue;
+
+        // Statuts
+        $besoin['idStatus'] = ($besoin[$typeBesoin] <= 0) ? 3 : 2; // Satisfait / Partiellement
+        $don['idStatus'] = ($don[$typeBesoin] <= 0) ? 3 : 2; // Distribué / Alloué partiellement
+
+        return [
+            'idVille' => $besoin['idVille'],
+            'idBesoin' => $besoin['id'],
+            'idDon' => $don['id'],
+            $typeBesoin => $attribue,
+            'dateDistribution' => date('Y-m-d H:i:s'),
+            'idStatusDistribution' => 2 // Effectué
+        ];
+    }
+
+    /** Simuler la distribution pour toutes les villes */
+    public function distribuer(array $allVille, array $allDon, array $allBesoin): array {
+        $distributions = [];
+
+        $allBesoin = $this->sortByDate($allBesoin, 'dateBesoin');
+        $allDon = $this->sortByDate($allDon, 'dateDon');
+
+        foreach ($allVille as &$ville) {
+            $villeId = $ville['id'];
+            $besoinsVille = $this->filterBesoinsByVille($allBesoin, $villeId);
+
+            foreach ($besoinsVille as &$besoin) {
+                $typeBesoin = $this->getTypeBesoin($besoin);
+
+                foreach ($allDon as &$don) {
+                    if (($don[$typeBesoin] ?? 0) <= 0 || $don['idStatus'] != 1) continue;
+
+                    while (($besoin[$typeBesoin] ?? 0) > 0 && ($don[$typeBesoin] ?? 0) > 0) {
+                        $result = $this->distribuerBesoinDon($besoin, $don, $typeBesoin);
+                        if ($result) $distributions[] = $result;
+                    }
+                }
+
+                // Calcul du reste pour le tableau de bord
+                $besoin['reste'] = $besoin[$typeBesoin] ?? 0;
+                $besoin['progression'] = $besoin['quantite'] > 0
+                    ? round((($besoin['quantite'] - $besoin['reste']) / $besoin['quantite']) * 100)
+                    : 0;
+                // Statut visuel pour la vue
+                $besoin['statutVisuel'] = match(true) {
+                    $besoin['progression'] >= 100 => 'Complet',
+                    $besoin['progression'] >= 50 => 'En cours',
+                    default => 'Urgent',
+                };
+            }
+        }
+
+        return $allBesoin;
     }
 }

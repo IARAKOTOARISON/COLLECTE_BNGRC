@@ -8,10 +8,6 @@ class Besoin {
         $this->db = $db;
     }
 
-    /**
-     * Récupérer tous les besoins
-     * @return array
-     */
     public function getAll() {
         $query = "SELECT b.id, b.idVille, b.idProduit, b.quantite, b.idStatus, b.dateBesoin,
                          v.nom AS ville, p.nom AS produit, s.nom AS status
@@ -27,3 +23,4 @@ class Besoin {
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 }
+?>
