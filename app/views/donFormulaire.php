@@ -28,6 +28,20 @@
                             Voir la liste des dons
                         </a>
                     </div>
+
+                    <?php if (isset($success) && $success): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <strong>Succès !</strong> <?= htmlspecialchars($success) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (isset($error) && $error): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Erreur !</strong> <?= htmlspecialchars($error) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
                     
                     <!-- Formulaire de saisie -->
                     <div class="row justify-content-center">
@@ -80,34 +94,22 @@
                                                 </label>
                                                 <select class="form-select form-select-lg" id="produitNature" name="produitNature">
                                                     <option value="" selected disabled>-- Sélectionnez un produit --</option>
-                                                    <optgroup label="Alimentation">
-                                                        <option value="riz">Riz (kg)</option>
-                                                        <option value="huile">Huile (litres)</option>
-                                                        <option value="eau">Eau potable (litres)</option>
-                                                        <option value="conserves">Conserves alimentaires</option>
-                                                        <option value="lait">Lait en poudre (kg)</option>
-                                                        <option value="sucre">Sucre (kg)</option>
-                                                    </optgroup>
-                                                    <optgroup label="Matériaux de construction">
-                                                        <option value="tole">Tôles ondulées (unités)</option>
-                                                        <option value="bois">Bois de construction (m³)</option>
-                                                        <option value="ciment">Ciment (sacs)</option>
-                                                        <option value="clous">Clous (kg)</option>
-                                                    </optgroup>
-                                                    <optgroup label="Équipements">
-                                                        <option value="tente">Tentes (unités)</option>
-                                                        <option value="couverture">Couvertures (unités)</option>
-                                                        <option value="vetements">Vêtements (lots)</option>
-                                                        <option value="lampe">Lampes torches (unités)</option>
-                                                        <option value="jerrycan">Jerrycans (unités)</option>
-                                                    </optgroup>
-                                                    <optgroup label="Santé & Hygiène">
-                                                        <option value="medicaments">Médicaments (kits)</option>
-                                                        <option value="kit_hygiene">Kits d'hygiène (unités)</option>
-                                                        <option value="savon">Savon (unités)</option>
-                                                        <option value="desinfectant">Désinfectant (litres)</option>
-                                                        <option value="masque">Masques (boîtes)</option>
-                                                    </optgroup>
+                                                    <?php if (!empty($produits) && is_array($produits)): ?>
+                                                        <?php foreach ($produits as $p): ?>
+                                                            <?php
+                                                                $pid = $p['id'] ?? $p['ID'] ?? null;
+                                                                $pnom = $p['nom'] ?? $p['NOM'] ?? $p['name'] ?? null;
+                                                            ?>
+                                                            <?php if ($pid !== null && $pnom !== null): ?>
+                                                                <option value="<?= htmlspecialchars($pid) ?>"><?= htmlspecialchars($pnom) ?></option>
+                                                            <?php endif; ?>
+                                                        <?php endforeach; ?>
+                                                    <?php else: ?>
+                                                        <!-- Fallback statique -->
+                                                        <option value="1">Riz</option>
+                                                        <option value="2">Huile</option>
+                                                        <option value="3">Eau potable</option>
+                                                    <?php endif; ?>
                                                 </select>
                                             </div>
 
@@ -165,24 +167,23 @@
                                             </label>
                                             <select class="form-select form-select-lg" id="villeDestinataire" name="villeDestinataire">
                                                 <option value="" selected>-- Non spécifié (à attribuer plus tard) --</option>
-                                                <option value="1">Antananarivo</option>
-                                                <option value="2">Toamasina</option>
-                                                <option value="3">Mahajanga</option>
-                                                <option value="4">Fianarantsoa</option>
-                                                <option value="5">Toliara</option>
-                                                <option value="6">Antsiranana</option>
-                                                <option value="7">Antsirabe</option>
-                                                <option value="8">Morondava</option>
-                                                <option value="9">Ambositra</option>
-                                                <option value="10">Manakara</option>
-                                                <option value="11">Sambava</option>
-                                                <option value="12">Taolagnaro</option>
+                                                <?php if (!empty($villes) && is_array($villes)): ?>
+                                                    <?php foreach ($villes as $v): ?>
+                                                        <?php
+                                                            $vid = $v['id'] ?? $v['ID'] ?? null;
+                                                            $vnom = $v['nom'] ?? $v['NOM'] ?? $v['name'] ?? null;
+                                                        ?>
+                                                        <?php if ($vid !== null && $vnom !== null): ?>
+                                                            <option value="<?= htmlspecialchars($vid) ?>"><?= htmlspecialchars($vnom) ?></option>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+                                                <?php endif; ?>
                                             </select>
                                             <div class="form-text">Si le don est destiné à une ville spécifique</div>
                                         </div>
 
                                         <!-- Notes/Commentaires -->
-                                        <div class="mb-4">
+                                        <div class="mb-4" style="display:none;">
                                             <label for="notesDon" class="form-label fw-bold">
                                                 Notes additionnelles (optionnel)
                                             </label>
@@ -286,26 +287,8 @@
 
         // Validation du formulaire
         document.getElementById('formDon').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const typeDon = document.querySelector('input[name="typeDon"]:checked').value;
-            let message = 'Don enregistré avec succès!\n\n';
-            
-            if (typeDon === 'nature') {
-                const donateur = document.getElementById('donateurNature').value;
-                const produit = document.getElementById('produitNature').options[document.getElementById('produitNature').selectedIndex].text;
-                const quantite = document.getElementById('quantiteNature').value;
-                message += `Type: Don en nature\nDonateur: ${donateur}\nProduit: ${produit}\nQuantité: ${quantite}`;
-            } else {
-                const donateur = document.getElementById('donateurArgent').value;
-                const montant = document.getElementById('montant').value;
-                message += `Type: Don en argent\nDonateur: ${donateur}\nMontant: ${montant} Ar`;
-            }
-            
-            alert(message);
-            
-            // Dans une vraie application, on enverrait les données au serveur ici
-            // this.submit();
+            // Laisser le formulaire se soumettre normalement
+            // Le traitement sera fait côté serveur
         });
     </script>
 </body>

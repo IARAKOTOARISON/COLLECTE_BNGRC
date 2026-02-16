@@ -16,6 +16,13 @@ class Don {
     }
 
     /**
+     * Alias pour getAllDon (pour cohérence avec les autres modèles)
+     */
+    public function getAllDons() {
+        return $this->getAllDon();
+    }
+
+    /**
      * Récupérer un don par son ID
      * @param int $id
      * @return array|null

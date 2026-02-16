@@ -2,6 +2,7 @@
 
 use app\controllers\TableauBordController;
 use app\controllers\BesoinController;
+use app\controllers\DonController;
 use app\middlewares\SecurityHeadersMiddleware;
 use flight\Engine;
 use flight\net\Router;
@@ -53,11 +54,21 @@ $router->group('', function(Router $router) use ($app) {
 	});
 
 	$router->get('/dons/formulaire', function() use ($app) {
-		$app->render('donFormulaire');
+		$db = $app->db();
+		$controller = new DonController($db, $app);
+		$controller->afficherFormulaire();
+	});
+
+	$router->post('/dons/ajouter', function() use ($app) {
+		$db = $app->db();
+		$controller = new DonController($db, $app);
+		$controller->ajouterDon();
 	});
 
 	$router->get('/dons/liste', function() use ($app) {
-		$app->render('donListe');
+		$db = $app->db();
+		$controller = new DonController($db, $app);
+		$controller->afficherListe();
 	});
 
 	// Route additionnelle pour lister les villes (peut rester)
