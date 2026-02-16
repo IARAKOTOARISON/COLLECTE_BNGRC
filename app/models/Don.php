@@ -23,6 +23,35 @@ class Don {
     }
 
     /**
+     * Récupérer tous les dons avec détails (produit, status)
+     * @return array
+     */
+    public function getAllDonsAvecDetails() {
+        $query = "
+            SELECT 
+                d.id,
+                d.idProduit,
+                d.montant,
+                d.quantite,
+                d.dateDon,
+                d.donateur_nom,
+                p.nom AS produit_nom,
+                s.nom AS status_nom,
+                CASE 
+                    WHEN d.idProduit IS NOT NULL THEN 'nature'
+                    ELSE 'argent'
+                END AS type_don
+            FROM don d
+            LEFT JOIN produit p ON d.idProduit = p.id
+            INNER JOIN statusDon s ON d.idStatus = s.id
+            ORDER BY d.dateDon DESC, d.id DESC
+        ";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Récupérer un don par son ID
      * @param int $id
      * @return array|null

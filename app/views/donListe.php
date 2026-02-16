@@ -29,38 +29,26 @@
                         </a>
                     </div>
 
+                    <?php if (isset($success) && $success): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <strong>Succès!</strong> <?= htmlspecialchars($success) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (isset($error) && $error): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Erreur!</strong> <?= htmlspecialchars($error) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
                     <!-- Filtres -->
                     <div class="card shadow mb-4">
                         <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label for="filtreType" class="form-label fw-bold">Filtrer par type</label>
-                                    <select class="form-select" id="filtreType">
-                                        <option value="">Tous les types</option>
-                                        <option value="nature">Don en nature</option>
-                                        <option value="argent">Don en argent</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="filtreVille" class="form-label fw-bold">Filtrer par ville</label>
-                                    <select class="form-select" id="filtreVille">
-                                        <option value="">Toutes les villes</option>
-                                        <option value="Antananarivo">Antananarivo</option>
-                                        <option value="Toamasina">Toamasina</option>
-                                        <option value="Mahajanga">Mahajanga</option>
-                                        <option value="Fianarantsoa">Fianarantsoa</option>
-                                        <option value="Toliara">Toliara</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="filtreDateDebut" class="form-label fw-bold">Date début</label>
-                                    <input type="date" class="form-control" id="filtreDateDebut">
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="filtreDateFin" class="form-label fw-bold">Date fin</label>
-                                    <input type="date" class="form-control" id="filtreDateFin">
-                                </div>
-                            </div>
+                            <p class="text-muted mb-0">
+                                <em>Filtres avancés disponibles prochainement</em>
+                            </p>
                         </div>
                     </div>
 
@@ -70,7 +58,7 @@
                             <div class="card text-white bg-success">
                                 <div class="card-body text-center">
                                     <h6 class="card-title">Total Dons</h6>
-                                    <h2 class="display-5">68</h2>
+                                    <h2 class="display-5"><?= $stats['total'] ?? 0 ?></h2>
                                 </div>
                             </div>
                         </div>
@@ -78,7 +66,7 @@
                             <div class="card text-white bg-info">
                                 <div class="card-body text-center">
                                     <h6 class="card-title">Dons en Nature</h6>
-                                    <h2 class="display-5">52</h2>
+                                    <h2 class="display-5"><?= $stats['nature'] ?? 0 ?></h2>
                                 </div>
                             </div>
                         </div>
@@ -86,7 +74,7 @@
                             <div class="card text-white bg-warning">
                                 <div class="card-body text-center">
                                     <h6 class="card-title">Dons en Argent</h6>
-                                    <h2 class="display-5">16</h2>
+                                    <h2 class="display-5"><?= $stats['argent'] ?? 0 ?></h2>
                                 </div>
                             </div>
                         </div>
@@ -94,7 +82,7 @@
                             <div class="card text-white bg-primary">
                                 <div class="card-body text-center">
                                     <h6 class="card-title">Montant Total</h6>
-                                    <h2 class="display-6">4.5M Ar</h2>
+                                    <h2 class="display-6"><?= number_format($stats['montant_total'] ?? 0, 0, ',', ' ') ?> Ar</h2>
                                 </div>
                             </div>
                         </div>
@@ -122,234 +110,63 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <th scope="row">1</th>
-                                            <td>2026-02-16</td>
-                                            <td><strong>Jean Rakoto</strong></td>
-                                            <td><span class="badge bg-info">Nature</span></td>
-                                            <td>Riz</td>
-                                            <td>250 kg</td>
-                                            <td>Antananarivo</td>
-                                            <td><span class="badge bg-success">Distribué</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">2</th>
-                                            <td>2026-02-16</td>
-                                            <td><strong>ONG Solidarité</strong></td>
-                                            <td><span class="badge bg-warning text-dark">Argent</span></td>
-                                            <td>Don financier</td>
-                                            <td>500,000 Ar</td>
-                                            <td>Non spécifié</td>
-                                            <td><span class="badge bg-secondary">En attente</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">3</th>
-                                            <td>2026-02-15</td>
-                                            <td><strong>Marie Rasoa</strong></td>
-                                            <td><span class="badge bg-info">Nature</span></td>
-                                            <td>Couvertures</td>
-                                            <td>100 unités</td>
-                                            <td>Toliara</td>
-                                            <td><span class="badge bg-success">Distribué</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">4</th>
-                                            <td>2026-02-15</td>
-                                            <td><strong>Entreprise ABC</strong></td>
-                                            <td><span class="badge bg-info">Nature</span></td>
-                                            <td>Eau potable</td>
-                                            <td>1000 litres</td>
-                                            <td>Mahajanga</td>
-                                            <td><span class="badge bg-primary">En cours</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">5</th>
-                                            <td>2026-02-14</td>
-                                            <td><strong>Paul Andria</strong></td>
-                                            <td><span class="badge bg-warning text-dark">Argent</span></td>
-                                            <td>Don financier</td>
-                                            <td>200,000 Ar</td>
-                                            <td>Fianarantsoa</td>
-                                            <td><span class="badge bg-success">Distribué</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">6</th>
-                                            <td>2026-02-14</td>
-                                            <td><strong>Association CARE</strong></td>
-                                            <td><span class="badge bg-info">Nature</span></td>
-                                            <td>Médicaments</td>
-                                            <td>50 kits</td>
-                                            <td>Toamasina</td>
-                                            <td><span class="badge bg-success">Distribué</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">7</th>
-                                            <td>2026-02-13</td>
-                                            <td><strong>Hanta Razafy</strong></td>
-                                            <td><span class="badge bg-info">Nature</span></td>
-                                            <td>Vêtements</td>
-                                            <td>150 lots</td>
-                                            <td>Antsiranana</td>
-                                            <td><span class="badge bg-success">Distribué</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">8</th>
-                                            <td>2026-02-13</td>
-                                            <td><strong>Fondation Espoir</strong></td>
-                                            <td><span class="badge bg-warning text-dark">Argent</span></td>
-                                            <td>Don financier</td>
-                                            <td>1,000,000 Ar</td>
-                                            <td>Non spécifié</td>
-                                            <td><span class="badge bg-secondary">En attente</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">9</th>
-                                            <td>2026-02-12</td>
-                                            <td><strong>Koto Rasolofo</strong></td>
-                                            <td><span class="badge bg-info">Nature</span></td>
-                                            <td>Tôles ondulées</td>
-                                            <td>80 unités</td>
-                                            <td>Morondava</td>
-                                            <td><span class="badge bg-primary">En cours</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">10</th>
-                                            <td>2026-02-12</td>
-                                            <td><strong>Soa Randria</strong></td>
-                                            <td><span class="badge bg-warning text-dark">Argent</span></td>
-                                            <td>Don financier</td>
-                                            <td>150,000 Ar</td>
-                                            <td>Antsirabe</td>
-                                            <td><span class="badge bg-success">Distribué</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">11</th>
-                                            <td>2026-02-11</td>
-                                            <td><strong>Croix Rouge</strong></td>
-                                            <td><span class="badge bg-info">Nature</span></td>
-                                            <td>Kits d'hygiène</td>
-                                            <td>200 unités</td>
-                                            <td>Ambositra</td>
-                                            <td><span class="badge bg-success">Distribué</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">12</th>
-                                            <td>2026-02-11</td>
-                                            <td><strong>Rija Andriana</strong></td>
-                                            <td><span class="badge bg-info">Nature</span></td>
-                                            <td>Huile</td>
-                                            <td>120 litres</td>
-                                            <td>Manakara</td>
-                                            <td><span class="badge bg-primary">En cours</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">13</th>
-                                            <td>2026-02-10</td>
-                                            <td><strong>Église Baptiste</strong></td>
-                                            <td><span class="badge bg-warning text-dark">Argent</span></td>
-                                            <td>Don financier</td>
-                                            <td>750,000 Ar</td>
-                                            <td>Sambava</td>
-                                            <td><span class="badge bg-success">Distribué</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">14</th>
-                                            <td>2026-02-10</td>
-                                            <td><strong>Lala Rakoto</strong></td>
-                                            <td><span class="badge bg-info">Nature</span></td>
-                                            <td>Tentes</td>
-                                            <td>30 unités</td>
-                                            <td>Taolagnaro</td>
-                                            <td><span class="badge bg-secondary">En attente</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">15</th>
-                                            <td>2026-02-09</td>
-                                            <td><strong>Groupe Ravinala</strong></td>
-                                            <td><span class="badge bg-warning text-dark">Argent</span></td>
-                                            <td>Don financier</td>
-                                            <td>2,000,000 Ar</td>
-                                            <td>Non spécifié</td>
-                                            <td><span class="badge bg-secondary">En attente</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-primary">Voir</button>
-                                                <button class="btn btn-sm btn-warning">Modifier</button>
-                                            </td>
-                                        </tr>
+                                        <?php if (empty($dons)): ?>
+                                            <tr>
+                                                <td colspan="9" class="text-center py-4">
+                                                    <p class="text-muted mb-0">Aucun don enregistré pour le moment.</p>
+                                                </td>
+                                            </tr>
+                                        <?php else: ?>
+                                            <?php foreach ($dons as $index => $don): ?>
+                                                <tr>
+                                                    <th scope="row"><?= $index + 1 ?></th>
+                                                    <td><?= date('d/m/Y', strtotime($don['dateDon'])) ?></td>
+                                                    <td><strong><?= htmlspecialchars($don['donateur_nom']) ?></strong></td>
+                                                    <td>
+                                                        <?php if ($don['type_don'] === 'nature'): ?>
+                                                            <span class="badge bg-info">Nature</span>
+                                                        <?php else: ?>
+                                                            <span class="badge bg-warning text-dark">Argent</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($don['type_don'] === 'nature'): ?>
+                                                            <?= htmlspecialchars($don['produit_nom'] ?? 'Non spécifié') ?>
+                                                        <?php else: ?>
+                                                            Don financier
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($don['type_don'] === 'nature'): ?>
+                                                            <?= htmlspecialchars($don['quantite']) ?>
+                                                        <?php else: ?>
+                                                            <?= number_format($don['montant'], 0, ',', ' ') ?> Ar
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>Non spécifié</td>
+                                                    <td>
+                                                        <?php
+                                                        $statusClass = 'bg-secondary';
+                                                        $statusLower = strtolower($don['status_nom']);
+                                                        if (strpos($statusLower, 'distribué') !== false || strpos($statusLower, 'satisf') !== false) {
+                                                            $statusClass = 'bg-success';
+                                                        } elseif (strpos($statusLower, 'cours') !== false || strpos($statusLower, 'partiel') !== false) {
+                                                            $statusClass = 'bg-primary';
+                                                        } elseif (strpos($statusLower, 'attente') !== false) {
+                                                            $statusClass = 'bg-secondary';
+                                                        }
+                                                        ?>
+                                                        <span class="badge <?= $statusClass ?>"><?= htmlspecialchars($don['status_nom']) ?></span>
+                                                    </td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-primary">Voir</button>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
                                     </tbody>
                                 </table>
                             </div>
-                            
-                            <!-- Pagination -->
-                            <nav aria-label="Navigation de la liste">
-                                <ul class="pagination justify-content-center mt-3">
-                                    <li class="page-item disabled">
-                                        <a class="page-link" href="#" tabindex="-1">Précédent</a>
-                                    </li>
-                                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                                    <li class="page-item"><a class="page-link" href="#">3</a></li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="#">Suivant</a>
-                                    </li>
-                                </ul>
-                            </nav>
                         </div>
                     </div>
                 </div>

@@ -137,11 +137,28 @@ class DonController {
      * Afficher la liste des dons
      */
     public function afficherListe(): void {
-        // À implémenter plus tard
-        $dons = $this->donModel->getAllDons();
+        $dons = $this->donModel->getAllDonsAvecDetails();
+        
+        // Calculer les statistiques
+        $stats = [
+            'total' => count($dons),
+            'nature' => 0,
+            'argent' => 0,
+            'montant_total' => 0
+        ];
+        
+        foreach ($dons as $don) {
+            if ($don['type_don'] === 'nature') {
+                $stats['nature']++;
+            } else {
+                $stats['argent']++;
+                $stats['montant_total'] += floatval($don['montant'] ?? 0);
+            }
+        }
         
         $this->app->render('donListe', [
-            'dons' => $dons
+            'dons' => $dons,
+            'stats' => $stats
         ]);
     }
 }
