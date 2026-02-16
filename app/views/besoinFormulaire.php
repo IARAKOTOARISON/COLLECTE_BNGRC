@@ -28,6 +28,20 @@
                             Voir la liste des besoins
                         </a>
                     </div>
+
+                    <?php if (isset($success) && $success): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <strong>Succès !</strong> <?= htmlspecialchars($success) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (isset($error) && $error): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Erreur !</strong> <?= htmlspecialchars($error) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
                     
                     <!-- Formulaire de saisie -->
                     <div class="row justify-content-center">
@@ -74,48 +88,21 @@
                                             </label>
                                             <select class="form-select form-select-lg" id="produit" name="produit" required>
                                                 <option value="" selected disabled>-- Sélectionnez un produit --</option>
-                                                <?php if (!empty($types) && is_array($types)): ?>
-                                                    <?php foreach ($types as $t): ?>
+                                                <?php if (!empty($produits) && is_array($produits)): ?>
+                                                    <?php foreach ($produits as $p): ?>
                                                         <?php
-                                                            // compatibilité champs: id/nom/label
-                                                            $tid = $t['id'] ?? $t['ID'] ?? null;
-                                                            $tnom = $t['nom'] ?? $t['NOM'] ?? $t['name'] ?? null;
+                                                            $pid = $p['id'] ?? $p['ID'] ?? null;
+                                                            $pnom = $p['nom'] ?? $p['NOM'] ?? $p['name'] ?? null;
                                                         ?>
-                                                        <?php if ($tnom !== null): ?>
-                                                            <!-- on met la valeur à $tnom (texte) pour garder compatibilité avec le mapping JS existant -->
-                                                            <option value="<?= htmlspecialchars(strtolower($tnom)) ?>"><?= htmlspecialchars($tnom) ?></option>
+                                                        <?php if ($pid !== null && $pnom !== null): ?>
+                                                            <option value="<?= htmlspecialchars($pid) ?>"><?= htmlspecialchars($pnom) ?></option>
                                                         <?php endif; ?>
                                                     <?php endforeach; ?>
                                                 <?php else: ?>
                                                     <!-- Fallback statique -->
-                                                    <optgroup label="Alimentation">
-                                                        <option value="riz">Riz (kg)</option>
-                                                        <option value="huile">Huile (litres)</option>
-                                                        <option value="eau">Eau potable (litres)</option>
-                                                        <option value="conserves">Conserves alimentaires</option>
-                                                        <option value="lait">Lait en poudre (kg)</option>
-                                                        <option value="sucre">Sucre (kg)</option>
-                                                    </optgroup>
-                                                    <optgroup label="Matériaux de construction">
-                                                        <option value="tole">Tôles ondulées (unités)</option>
-                                                        <option value="bois">Bois de construction (m³)</option>
-                                                        <option value="ciment">Ciment (sacs)</option>
-                                                        <option value="clous">Clous (kg)</option>
-                                                    </optgroup>
-                                                    <optgroup label="Équipements">
-                                                        <option value="tente">Tentes (unités)</option>
-                                                        <option value="couverture">Couvertures (unités)</option>
-                                                        <option value="vetements">Vêtements (lots)</option>
-                                                        <option value="lampe">Lampes torches (unités)</option>
-                                                        <option value="jerrycan">Jerrycans (unités)</option>
-                                                    </optgroup>
-                                                    <optgroup label="Santé & Hygiène">
-                                                        <option value="medicaments">Médicaments (kits)</option>
-                                                        <option value="kit_hygiene">Kits d'hygiène (unités)</option>
-                                                        <option value="savon">Savon (unités)</option>
-                                                        <option value="desinfectant">Désinfectant (litres)</option>
-                                                        <option value="masque">Masques (boîtes)</option>
-                                                    </optgroup>
+                                                    <option value="1">Riz</option>
+                                                    <option value="2">Huile</option>
+                                                    <option value="3">Eau potable</option>
                                                 <?php endif; ?>
                                             </select>
                                             <div class="form-text">Sélectionnez le type de produit dont la ville a besoin</div>
@@ -141,28 +128,6 @@
                                             <div class="form-text">Date d'enregistrement du besoin (par défaut: aujourd'hui)</div>
                                         </div>
 
-                                        <!-- Priorité -->
-                                        <div class="mb-3">
-                                            <label for="priorite" class="form-label fw-bold">
-                                                Niveau de priorité
-                                            </label>
-                                            <select class="form-select form-select-lg" id="priorite" name="priorite">
-                                                <option value="normal">Normal</option>
-                                                <option value="urgent" selected>Urgent</option>
-                                                <option value="critique">Critique</option>
-                                            </select>
-                                            <div class="form-text">Évaluez le niveau d'urgence de ce besoin</div>
-                                        </div>
-
-                                        <!-- Notes/Commentaires -->
-                                        <div class="mb-4">
-                                            <label for="notes" class="form-label fw-bold">
-                                                Notes additionnelles (optionnel)
-                                            </label>
-                                            <textarea class="form-control" id="notes" name="notes" rows="3" 
-                                                      placeholder="Ajoutez des informations supplémentaires sur ce besoin..."></textarea>
-                                        </div>
-
                                         <!-- Boutons -->
                                         <div class="d-flex gap-2">
                                             <button type="submit" class="btn btn-primary btn-lg px-5">
@@ -186,55 +151,8 @@
     
     <script src="/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Script pour afficher l'unité correspondant au produit sélectionné
-        document.getElementById('produit').addEventListener('change', function() {
-            const quantiteInput = document.getElementById('quantite');
-            const produit = this.value;
-            
-            // Map des unités par produit
-            const unites = {
-                'riz': 'kg',
-                'huile': 'litres',
-                'eau': 'litres',
-                'tole': 'unités',
-                'bois': 'm³',
-                'ciment': 'sacs',
-                'conserves': 'unités',
-                'tente': 'unités',
-                'couverture': 'unités',
-                'medicaments': 'kits',
-                'kit_hygiene': 'unités',
-                'vetements': 'lots',
-                'lait': 'kg',
-                'sucre': 'kg',
-                'clous': 'kg',
-                'lampe': 'unités',
-                'jerrycan': 'unités',
-                'savon': 'unités',
-                'desinfectant': 'litres',
-                'masque': 'boîtes'
-            };
-            
-            if (unites[produit]) {
-                quantiteInput.placeholder = `Exemple: 100 ${unites[produit]}`;
-            }
-        });
-
-        // Validation du formulaire
-        document.getElementById('formBesoin').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Récupération des valeurs
-            const ville = document.getElementById('ville').options[document.getElementById('ville').selectedIndex].text;
-            const produit = document.getElementById('produit').options[document.getElementById('produit').selectedIndex].text;
-            const quantite = document.getElementById('quantite').value;
-            
-            // Simulation d'enregistrement
-            alert(`Besoin enregistré avec succès!\n\nVille: ${ville}\nProduit: ${produit}\nQuantité: ${quantite}`);
-            
-            // Dans une vraie application, on enverrait les données au serveur ici
-            // this.submit();
-        });
+        // Supprimer le preventDefault et laisser le formulaire se soumettre normalement
+        // Le script pour les unités n'est plus nécessaire car on utilise les IDs des produits
     </script>
 </body>
 

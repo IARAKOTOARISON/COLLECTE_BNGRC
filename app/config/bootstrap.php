@@ -7,6 +7,25 @@
  */
 $ds = DIRECTORY_SEPARATOR;
 require(__DIR__ . $ds . '..' . $ds . '..' . $ds . 'vendor' . $ds . 'autoload.php');
+
+// Autoloader simple pour les namespaces app\* et App\*
+spl_autoload_register(function ($class) {
+    $ds = DIRECTORY_SEPARATOR;
+    $baseDir = __DIR__ . $ds . '..' . $ds;
+    
+    // Convertir namespace en chemin de fichier
+    // app\controllers\BesoinController -> app/controllers/BesoinController.php
+    // App\models\Ville -> app/models/Ville.php
+    $classLower = str_replace(['app\\', 'App\\'], '', $class);
+    $classLower = str_replace('\\', $ds, $classLower);
+    
+    $file = $baseDir . $classLower . '.php';
+    
+    if (file_exists($file)) {
+        require $file;
+    }
+});
+
 if(file_exists(__DIR__. $ds . 'config.php') === false) {
 	Flight::halt(500, 'Config file not found. Please create a config.php file in the app/config directory to get started.');
 }

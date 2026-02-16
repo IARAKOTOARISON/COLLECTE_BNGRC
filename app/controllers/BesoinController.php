@@ -1,10 +1,10 @@
 <?php
-namespace App\Controllers;
+namespace app\controllers;
 
-use App\models\Ville;
-use App\models\Produit;
-use App\models\StatusBesoin;
-use App\models\Besoin;
+use app\models\Ville;
+use app\models\Produit;
+use app\models\StatusBesoin;
+use app\models\Besoin;
 use flight\Engine;
 
 class BesoinController {
@@ -104,10 +104,30 @@ class BesoinController {
      * Afficher la liste des besoins
      */
     public function afficherListe(): void {
-        $besoins = $this->besoinModel->getAllBesoin();
+        $besoins = $this->besoinModel->getAllBesoinsAvecDetails();
+        
+        // Calculer les statistiques
+        $stats = [
+            'total' => count($besoins),
+            'attente' => 0,
+            'partiel' => 0,
+            'satisfait' => 0,
+        ];
+        
+        foreach ($besoins as $besoin) {
+            $status = strtolower($besoin['status_nom'] ?? '');
+            if (strpos($status, 'attente') !== false || strpos($status, 'en cours') !== false) {
+                $stats['attente']++;
+            } elseif (strpos($status, 'partiel') !== false) {
+                $stats['partiel']++;
+            } elseif (strpos($status, 'satisfait') !== false || strpos($status, 'complet') !== false) {
+                $stats['satisfait']++;
+            }
+        }
         
         $this->app->render('besoinListe', [
-            'besoins' => $besoins
+            'besoins' => $besoins,
+            'stats' => $stats
         ]);
     }
 }

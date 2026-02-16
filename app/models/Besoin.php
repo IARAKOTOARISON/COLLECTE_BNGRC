@@ -16,6 +16,30 @@ class Besoin {
     }
 
     /**
+     * Récupérer tous les besoins avec détails (ville, produit, status)
+     * @return array
+     */
+    public function getAllBesoinsAvecDetails() {
+        $query = "
+            SELECT 
+                b.id,
+                b.quantite,
+                b.dateBesoin,
+                v.nom AS ville_nom,
+                p.nom AS produit_nom,
+                s.nom AS status_nom
+            FROM besoin b
+            INNER JOIN ville v ON b.idVille = v.id
+            INNER JOIN produit p ON b.idProduit = p.id
+            INNER JOIN statusBesoin s ON b.idStatus = s.id
+            ORDER BY b.dateBesoin DESC, b.id DESC
+        ";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Récupérer un besoin par son ID
      * @param int $id
      * @return array|null

@@ -1,6 +1,7 @@
 <?php
 
 use app\controllers\TableauBordController;
+use app\controllers\BesoinController;
 use app\middlewares\SecurityHeadersMiddleware;
 use flight\Engine;
 use flight\net\Router;
@@ -35,21 +36,20 @@ $router->group('', function(Router $router) use ($app) {
 
 	$router->get('/besoins/formulaire', function() use ($app) {
 		$db = $app->db();
-		// charger les villes et types de besoin depuis la base
-		$villeModel = new \App\models\Ville($db);
-		$typeModel = new \App\models\TypeBesoin($db);
+		$controller = new BesoinController($db, $app);
+		$controller->afficherFormulaire();
+	});
 
-		$villes = $villeModel->getAllVilles();
-		$types = $typeModel->getAllTypesBesoin();
-
-		$app->render('besoinFormulaire', [
-			'villes' => $villes,
-			'types' => $types,
-		]);
+	$router->post('/besoins/ajouter', function() use ($app) {
+		$db = $app->db();
+		$controller = new BesoinController($db, $app);
+		$controller->ajouterBesoin();
 	});
 
 	$router->get('/besoins/liste', function() use ($app) {
-		$app->render('besoinListe');
+		$db = $app->db();
+		$controller = new BesoinController($db, $app);
+		$controller->afficherListe();
 	});
 
 	$router->get('/dons/formulaire', function() use ($app) {
