@@ -11,13 +11,13 @@
 </head>
 
 <body class="d-flex flex-column min-vh-100">
-    <?php include __DIR__ . '/../../public/includes/header.php'; ?>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/header.php'; ?>
     
     <div class="container-fluid flex-grow-1">
         <div class="row h-100">
            
-            <nav class="col-md-3 col-lg-2 bg-dark text-white p-3">
-                <?php include __DIR__ . '/../../public/includes/menu.php'; ?>
+             <nav class="col-md-3 col-lg-2 bg-dark text-white p-3">
+                <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/menu.php'; ?>
             </nav>
             
            
@@ -39,64 +39,6 @@
                             <strong>Erreur!</strong> <?= htmlspecialchars($error) ?>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
-                    <?php endif; ?>
-
-                    <!-- Statistiques -->
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="card text-white bg-primary">
-                                <div class="card-body text-center">
-                                    <h6 class="card-title">Total Villes</h6>
-                                    <h2 class="display-5"><?= $stats['total_villes'] ?? 0 ?></h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card text-white bg-success">
-                                <div class="card-body text-center">
-                                    <h6 class="card-title">Total Régions</h6>
-                                    <h2 class="display-5"><?= $stats['total_regions'] ?? 0 ?></h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card text-white bg-info">
-                                <div class="card-body text-center">
-                                    <h6 class="card-title">Moyenne Villes/Région</h6>
-                                    <h2 class="display-5">
-                                        <?php 
-                                        $moyenne = ($stats['total_regions'] > 0) 
-                                            ? round($stats['total_villes'] / $stats['total_regions'], 1) 
-                                            : 0;
-                                        echo $moyenne;
-                                        ?>
-                                    </h2>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Répartition par région -->
-                    <?php if (!empty($stats['villes_par_region'])): ?>
-                    <div class="card shadow mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h5 class="mb-0">Répartition par Région</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <?php foreach ($stats['villes_par_region'] as $region => $count): ?>
-                                    <div class="col-md-3 col-sm-6 mb-3">
-                                        <div class="card border-info">
-                                            <div class="card-body text-center">
-                                                <h6 class="card-title text-info"><?= htmlspecialchars($region) ?></h6>
-                                                <p class="card-text display-6"><?= $count ?> ville<?= $count > 1 ? 's' : '' ?></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                    </div>
                     <?php endif; ?>
 
                     <!-- Tableau des villes -->
@@ -143,12 +85,74 @@
                             </div>
                         </div>
                     </div>
+<br><br><br>
+
+                    <!-- Statistiques -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card text-white bg-primary">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Total Villes</h6>
+                                    <h2 class="display-5"><?= $stats['total_villes'] ?? 0 ?></h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card text-white bg-success">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Total Régions</h6>
+                                    <h2 class="display-5"><?= $stats['total_regions'] ?? 0 ?></h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card text-white bg-info">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Moyenne Villes/Région</h6>
+                                    <h2 class="display-5">
+                                        <?php 
+                                        $moyenne = ($stats['total_regions'] > 0) 
+                                            ? round($stats['total_villes'] / $stats['total_regions'], 1) 
+                                            : 0;
+                                        echo $moyenne;
+                                        ?>
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Répartition par région -->
+                    <?php if (!empty($stats['villes_par_region'])): ?>
+                    <div class="card shadow mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">Répartition par Région</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <?php foreach ($stats['villes_par_region'] as $region => $count): ?>
+                                    <div class="col-md-3 col-sm-6 mb-3">
+                                        <div class="card border-info">
+                                            <div class="card-body text-center">
+                                                <h6 class="card-title text-info"><?= htmlspecialchars($region) ?></h6>
+                                                <p class="card-text display-6"><?= $count ?> ville<?= $count > 1 ? 's' : '' ?></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+
                 </div>
             </main>
         </div>
     </div>
     
-    <?php include __DIR__ . '/../../public/includes/footer.php'; ?>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/footer.php'; ?>
     
     <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
