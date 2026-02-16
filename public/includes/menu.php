@@ -30,5 +30,11 @@
             Liste Dons
         </a>
     </li>
+    <li class="nav-item mb-2">
+        <a class="nav-link text-white" href="/simulation">
+            <img src="/assets/icons/proposition.png" alt="simulation" class="icon-menu">
+            Simulation Dispatch
+        </a>
+    </li>
     
 </ul>

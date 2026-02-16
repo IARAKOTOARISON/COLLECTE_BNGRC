@@ -37,4 +37,9 @@ $router->group('', function (Router $router) use ($app) {
 		$app->render('donListe');
 	});
 
+	// Page simulation de dispatch (propositions automatiques avec validation manuelle)
+	$router->get('/simulation', function () use ($app) {
+		$app->render('simulation');
+	});
+
 }, [SecurityHeadersMiddleware::class]);
