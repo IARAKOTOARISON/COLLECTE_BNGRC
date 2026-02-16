@@ -12,6 +12,10 @@ class SimulationController extends BaseController {
      * Afficher la page de simulation avec dispatch automatique
      */
     public function afficherSimulation() {
+        // S'assurer que la session est démarrée pour lire les messages flash
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
         $besoinModel = new Besoin($this->db);
         $donModel = new Don($this->db);
         $distributionModel = new Distribution($this->db);
@@ -69,6 +73,11 @@ class SimulationController extends BaseController {
         $distributionModel = new Distribution($this->db);
         
         try {
+            // S'assurer que la session est démarrée pour stocker les messages flash
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                session_start();
+            }
+
             // Début de transaction
             $this->db->beginTransaction();
             
@@ -84,15 +93,42 @@ class SimulationController extends BaseController {
             foreach ($distributionsProposees as $dist) {
                 $data = [
                     'idBesoin' => $dist['idBesoin'],
+                    'idVille' => $dist['idVille'],
                     'idDon' => $dist['idDon'],
                     'quantite' => $dist['quantite_attribuee'],
-                    'idStatus' => 1, // Status "En attente" ou "Effectué" selon votre base
+                    // Utiliser le champ correspondant au schéma: idStatusDistribution
+                    'idStatusDistribution' => 2, // 2 = Effectué (ou ajuster selon vos valeurs en base)
                     'dateDistribution' => date('Y-m-d H:i:s')
                 ];
                 
                 if ($distributionModel->create($data)) {
                     $count++;
                 }
+            }
+
+            // Mettre à jour les statuts des besoins selon les distributions enregistrées
+            // Si un besoin est entièrement couvert -> idStatus = 3 (satisfait), sinon 2 (partiel)
+            $stmt = $this->db->prepare("SELECT b.id, b.quantite, COALESCE(SUM(d.quantite),0) AS distribue FROM besoin b LEFT JOIN distribution d ON b.id = d.idBesoin GROUP BY b.id");
+            $stmt->execute();
+            $besoinsEtat = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            foreach ($besoinsEtat as $b) {
+                $reste = $b['quantite'] - $b['distribue'];
+                $status = ($reste <= 0) ? 3 : (($b['distribue'] > 0) ? 2 : 1);
+                // Utiliser la méthode update du modèle Besoin
+                $besoinModel->update($b['id'], ['idStatus' => $status]);
+            }
+
+            // Mettre à jour les statuts des dons selon les distributions enregistrées
+            // Si un don est épuisé -> idStatus = 3 (distribué), sinon 2 (partiel) ou 1 (disponible)
+            $stmt2 = $this->db->prepare("SELECT don.id, don.quantite, don.montant, don.idProduit, COALESCE(SUM(distr.quantite),0) AS distribue FROM don LEFT JOIN distribution distr ON don.id = distr.idDon GROUP BY don.id");
+            $stmt2->execute();
+            $donsEtat = $stmt2->fetchAll(\PDO::FETCH_ASSOC);
+            foreach ($donsEtat as $dn) {
+                // Choisir la référence (quantite pour nature, montant pour financier)
+                $baseValeur = ($dn['idProduit'] !== null) ? ($dn['quantite'] ?? 0) : ($dn['montant'] ?? 0);
+                $resteDon = $baseValeur - $dn['distribue'];
+                $statusDon = ($resteDon <= 0) ? 3 : (($dn['distribue'] > 0) ? 2 : 1);
+                $donModel->update($dn['id'], ['idStatus' => $statusDon]);
             }
             
             // Valider la transaction
@@ -103,6 +139,9 @@ class SimulationController extends BaseController {
         } catch (\Exception $e) {
             // Annuler la transaction en cas d'erreur
             $this->db->rollBack();
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                session_start();
+            }
             $_SESSION['error_message'] = "Erreur lors de la création des distributions : " . $e->getMessage();
         }
         
@@ -144,6 +183,7 @@ class SimulationController extends BaseController {
                 // Créer la distribution
                 $distributions[] = [
                     'idBesoin' => $besoin['id'],
+                    'idVille' => $besoin['idVille'],
                     'idDon' => $don['id'],
                     'ville_nom' => $besoin['ville_nom'],
                     'produit_nom' => $besoin['produit_nom'],

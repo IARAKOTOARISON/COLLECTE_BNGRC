@@ -101,8 +101,8 @@ class Distribution {
      * @return bool|int Retourne l'ID de la distribution créée ou false
      */
     public function create($data) {
-        $query = "INSERT INTO distribution (idBesoin, idDon, quantite, idStatus, dateDistribution)
-                  VALUES (:idBesoin, :idDon, :quantite, :idStatus, :dateDistribution)";
+        $query = "INSERT INTO distribution (idBesoin, idDon, idVille, quantite, idStatusDistribution, dateDistribution)
+                  VALUES (:idBesoin, :idDon, :idVille, :quantite, :idStatusDistribution, :dateDistribution)";
         $stmt = $this->db->prepare($query);
         $result = $stmt->execute($data);
         return $result ? $this->db->lastInsertId() : false;
@@ -132,7 +132,7 @@ class Distribution {
             INNER JOIN ville v ON b.idVille = v.id
             INNER JOIN produit p ON b.idProduit = p.id
             INNER JOIN don don ON d.idDon = don.id
-            INNER JOIN statusDistribution s ON d.idStatus = s.id
+            INNER JOIN statusDistribution s ON d.idStatusDistribution = s.id
             ORDER BY d.dateDistribution DESC
         ";
         $stmt = $this->db->prepare($query);
