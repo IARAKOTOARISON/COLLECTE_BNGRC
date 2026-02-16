@@ -52,6 +52,43 @@ class Don {
     }
 
     /**
+     * Récupérer les dons disponibles avec quantités restantes calculées
+     * @return array
+     */
+    public function getDonsDisponibles() {
+        $query = "
+            SELECT 
+                d.id,
+                d.idProduit,
+                d.montant,
+                d.quantite,
+                d.dateDon,
+                d.donateur_nom,
+                p.nom AS produit_nom,
+                CASE 
+                    WHEN d.idProduit IS NOT NULL THEN 'nature'
+                    ELSE 'argent'
+                END AS type_don,
+                -- Calculer la quantité déjà distribuée
+                COALESCE(SUM(dist.quantite), 0) AS quantite_distribuee,
+                -- Calculer la quantité restante
+                CASE 
+                    WHEN d.idProduit IS NOT NULL THEN d.quantite - COALESCE(SUM(dist.quantite), 0)
+                    ELSE d.montant - COALESCE(SUM(dist.quantite), 0)
+                END AS quantite_restante
+            FROM don d
+            LEFT JOIN produit p ON d.idProduit = p.id
+            LEFT JOIN distribution dist ON d.id = dist.idDon
+            GROUP BY d.id, d.idProduit, d.montant, d.quantite, d.dateDon, d.donateur_nom, p.nom
+            HAVING quantite_restante > 0
+            ORDER BY d.dateDon ASC, d.id ASC
+        ";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Récupérer un don par son ID
      * @param int $id
      * @return array|null

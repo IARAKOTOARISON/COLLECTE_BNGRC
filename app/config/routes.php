@@ -4,6 +4,7 @@ use app\controllers\TableauBordController;
 use app\controllers\BesoinController;
 use app\controllers\DonController;
 use app\controllers\VilleController;
+use app\controllers\SimulationController;
 use app\middlewares\SecurityHeadersMiddleware;
 use flight\Engine;
 use flight\net\Router;
@@ -31,7 +32,15 @@ $router->group('', function(Router $router) use ($app) {
 	});
 
 	$router->get('/simulation', function () use ($app) {
-		$app->render('simulation');
+		$db = $app->db();
+		$controller = new SimulationController($db, $app);
+		$controller->afficherSimulation();
+	});
+
+	$router->post('/simulation/confirmer', function () use ($app) {
+		$db = $app->db();
+		$controller = new SimulationController($db, $app);
+		$controller->confirmerDispatch();
 	});
 
 	// Pages statiques / formulaires / listes — routes alignées avec le menu

@@ -1,5 +1,5 @@
 <?php
-namespace App\Models;
+namespace App\models;
 
 class Distribution {
     private \PDO $db;
@@ -94,4 +94,60 @@ class Distribution {
 
         return $allBesoin;
     }
+
+    /**
+     * Créer une distribution en base de données
+     * @param array $data
+     * @return bool|int Retourne l'ID de la distribution créée ou false
+     */
+    public function create($data) {
+        $query = "INSERT INTO distribution (idBesoin, idDon, quantite, idStatus, dateDistribution)
+                  VALUES (:idBesoin, :idDon, :quantite, :idStatus, :dateDistribution)";
+        $stmt = $this->db->prepare($query);
+        $result = $stmt->execute($data);
+        return $result ? $this->db->lastInsertId() : false;
+    }
+
+    /**
+     * Récupérer toutes les distributions avec détails
+     * @return array
+     */
+    public function getAllDistributionsAvecDetails() {
+        $query = "
+            SELECT 
+                d.id,
+                d.idBesoin,
+                d.idDon,
+                d.quantite,
+                d.dateDistribution,
+                v.nom AS ville_nom,
+                p.nom AS produit_nom,
+                don.donateur_nom,
+                don.dateDon,
+                b.quantite AS besoin_quantite,
+                b.dateBesoin,
+                s.nom AS status_nom
+            FROM distribution d
+            INNER JOIN besoin b ON d.idBesoin = b.id
+            INNER JOIN ville v ON b.idVille = v.id
+            INNER JOIN produit p ON b.idProduit = p.id
+            INNER JOIN don don ON d.idDon = don.id
+            INNER JOIN statusDistribution s ON d.idStatus = s.id
+            ORDER BY d.dateDistribution DESC
+        ";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Supprimer toutes les distributions (pour réinitialiser)
+     * @return bool
+     */
+    public function deleteAll() {
+        $query = "DELETE FROM distribution";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute();
+    }
 }
+
