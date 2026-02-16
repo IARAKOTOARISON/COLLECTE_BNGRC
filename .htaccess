@@ -1,0 +1,19 @@
+<IfModule mod_rewrite.c>
+    # Empêcher le listing de répertoire et forcer index.php
+    DirectoryIndex public/index.php
+    Options -Indexes
+    
+    RewriteEngine On
+    RewriteBase /COLLECTE_BNGRC/
+    
+    # Si la requête n'est PAS pour un fichier qui existe dans public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Rediriger tout vers public/index.php
+    RewriteRule ^(.*)$ public/index.php [QSA,L]
+    
+    # Pour les fichiers statiques (assets, etc.)
+    RewriteCond %{REQUEST_URI} !^/COLLECTE_BNGRC/public/
+    RewriteRule ^(assets|includes)/(.*) public/$1/$2 [L]
+</IfModule>

@@ -11,13 +11,13 @@
 </head>
 
 <body class="d-flex flex-column min-vh-100">
-    <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/header.php'; ?>
+    <?php include __DIR__ . '/../../public/includes/header.php'; ?>
     
     <div class="container-fluid flex-grow-1">
         <div class="row h-100">
            
             <nav class="col-md-3 col-lg-2 bg-dark text-white p-3">
-                <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/menu.php'; ?>
+                <?php include __DIR__ . '/../../public/includes/menu.php'; ?>
             </nav>
             
            
@@ -279,7 +279,7 @@
         </div>
     </div>
     
-    <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/footer.php'; ?>
+    <?php include __DIR__ . '/../../public/includes/footer.php'; ?>
     
     <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>

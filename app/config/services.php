@@ -96,6 +96,12 @@ if ($basePath === '/' || $basePath === '\\' || $basePath === '.') {
 }
 $app->set('baseUrl', $basePath);
 
+// Configure Flight base URL for proper routing
+// When running from a subdirectory, Flight needs to know the base path
+if ($basePath !== '') {
+    $app->set('flight.base_url', $basePath);
+}
+
 /**********************************************
  *         Third-Party Integrations           *
  **********************************************/

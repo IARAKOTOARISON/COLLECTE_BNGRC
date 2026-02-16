@@ -2,14 +2,14 @@
 <h5 class="mb-3">Menu</h5>
 <ul class="nav flex-column">
     <li class="nav-item mb-2">
-        <a class="nav-link text-white active" href="<?= htmlspecialchars($base) ?>/accueil">
-            <img src="<?= htmlspecialchars($base) ?>/assets/icons/home.png" alt="home" class="icon-menu">
-            Accueil
+        <a class="nav-link text-white active" href="<?= htmlspecialchars($base) ?>/tableauBord">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/home.png" alt="tableau de bord" class="icon-menu">
+            Tableau de Bord
         </a>
     </li>
     <li class="nav-item mb-2">
         <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/besoins/formulaire">
-            <img src="<?= htmlspecialchars($base) ?>/assets/icons/boxes.png" alt="home" class="icon-menu">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/boxes.png" alt="besoins" class="icon-menu">
             Saisir Besoins
         </a>
     </li>
