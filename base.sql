@@ -141,6 +141,41 @@ CREATE TABLE distribution (
     )
 ); 
 
+-- ============================================
+-- Table: achat (enregistre les achats effectués via des dons en argent)
+-- ============================================
+CREATE TABLE achat (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    idBesoin INT NOT NULL,
+    idDon INT NOT NULL,
+    idVille INT NOT NULL,
+    idProduit INT NOT NULL,
+    quantiteAchetee DECIMAL(15,2) NOT NULL,
+    montant_sans_frais DECIMAL(15,2) NOT NULL,
+    frais DECIMAL(15,2) NOT NULL,
+    montant_total DECIMAL(15,2) NOT NULL,
+    dateAchat DATETIME NOT NULL,
+    FOREIGN KEY (idBesoin) REFERENCES besoin(id),
+    FOREIGN KEY (idDon) REFERENCES don(id),
+    FOREIGN KEY (idVille) REFERENCES ville(id),
+    FOREIGN KEY (idProduit) REFERENCES produit(id),
+    INDEX idx_achat_date (dateAchat)
+);
+
+-- ============================================
+-- Table: setting (stocke des paramètres modifiables par l'utilisateur)
+-- ============================================
+CREATE TABLE setting (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    `key` VARCHAR(191) NOT NULL UNIQUE,
+    `value` VARCHAR(255) NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Valeur par défaut pour le pourcentage de frais d'achat (10%)
+INSERT INTO setting (`key`, `value`) VALUES ('achats.frais_percent', '10')
+ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
+
 
 
 

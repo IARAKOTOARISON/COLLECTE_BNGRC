@@ -93,4 +93,8 @@ return [
 	// ],
 
 	// Add more configuration sections below as needed
+	'achats' => [
+		// Pourcentage de frais appliqué sur le montant d'achat (ex: 10 pour 10%)
+		'frais_percent' => 10,
+	],
 ];
