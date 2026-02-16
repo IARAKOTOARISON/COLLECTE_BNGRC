@@ -1,6 +1,6 @@
 <?php
 
-use app\controllers\ApiExampleController;
+use app\controllers\TableauBordController;
 use app\middlewares\SecurityHeadersMiddleware;
 use flight\Engine;
 use flight\net\Router;
@@ -10,36 +10,18 @@ use flight\net\Router;
  * @var Engine $app
  */
 
-$router->group('', function (Router $router) use ($app) {
+$router->group('', function(Router $router) use ($app) {
 
-	// Page d'accueil
-	$router->get('/', function () use ($app) {
+	$router->get('/', function() use ($app) {
 		$app->render('accueil');
 	});
 
-	// Page formulaire de saisie des besoins
-	$router->get('/besoins/formulaire', function () use ($app) {
-		$app->render('besoinFormulaire');
-	});
+	///////////////////////////////////////////////////////////////////////tableau de bord
 
-	// Page liste des besoins
-	$router->get('/besoins/liste', function () use ($app) {
-		$app->render('besoinListe');
+	$router->get('/tableauBord', function() use ($app) {
+		$db = $app->db();
+		$controller = new TableauBordController($db, $app);
+		$controller->getAllAboutVille();
 	});
-
-	// Page formulaire de saisie des dons
-	$router->get('/dons/formulaire', function () use ($app) {
-		$app->render('donFormulaire');
-	});
-
-	// Page liste des dons
-	$router->get('/dons/liste', function () use ($app) {
-		$app->render('donListe');
-	});
-
-	// Page simulation de dispatch (propositions automatiques avec validation manuelle)
-	$router->get('/simulation', function () use ($app) {
-		$app->render('simulation');
-	});
-
-}, [SecurityHeadersMiddleware::class]);
+	
+}, [ SecurityHeadersMiddleware::class ]);

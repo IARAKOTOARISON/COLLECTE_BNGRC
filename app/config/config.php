@@ -66,7 +66,7 @@ return [
 	 *         Database Settings          *
 	 **************************************/
 	'database' => [
-		// MySQL Example:
+		
 		'host'     => 'localhost',      // Database host (e.g., 'localhost', 'db.example.com')
 		'dbname'   => 'BNGRC',   // Database name (e.g., 'flightphp')
 		'user'     => 'root',  // Database user (e.g., 'root')
