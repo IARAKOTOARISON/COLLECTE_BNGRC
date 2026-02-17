@@ -94,6 +94,20 @@
                         </div>
                     </div>
 
+                    <!-- Boutons SIMULER et VALIDER -->
+                    <div class="d-flex gap-3 mb-4">
+                        <button type="button" id="btnSimuler" class="btn btn-primary btn-lg">
+                            <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="spinnerSimuler"></span>
+                            🔄 SIMULER
+                        </button>
+                        <form method="POST" action="<?= htmlspecialchars($base) ?>/simulation/valider" id="formValider" style="display: inline;">
+                            <input type="hidden" name="distributions" id="distributionsData" value="">
+                            <button type="submit" id="btnValider" class="btn btn-success btn-lg" disabled>
+                                ✓ VALIDER
+                            </button>
+                        </form>
+                    </div>
+
                     <!-- Tableau 1: Besoins non satisfaits -->
                     <div class="card shadow mb-4">
                         <div class="card-header bg-danger text-white">
@@ -274,6 +288,94 @@
                             <?php endif; ?>
                         </div>
                     </div>
+
+                    <!-- Tableau 4: Propositions Nature (AJAX) -->
+                    <div class="card shadow mb-4" id="cardPropositionsNature" style="display: none;">
+                        <div class="card-header bg-info text-white">
+                            <h4 class="mb-0">📦 Propositions Nature (Dons en nature)</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="tablePropositionsNature">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Ville</th>
+                                            <th>Produit</th>
+                                            <th>Quantité</th>
+                                            <th>Donateur</th>
+                                            <th>Statut</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Rempli dynamiquement via AJAX -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tableau 5: Propositions Achats (AJAX) -->
+                    <div class="card shadow mb-4" id="cardPropositionsAchats" style="display: none;">
+                        <div class="card-header bg-warning text-dark">
+                            <h4 class="mb-0">💰 Propositions Achats (Dons financiers)</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="tablePropositionsAchats">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Ville</th>
+                                            <th>Produit</th>
+                                            <th>Quantité</th>
+                                            <th>Coût estimé</th>
+                                            <th>Frais</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Rempli dynamiquement via AJAX -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Résumé Simulation (AJAX) -->
+                    <div class="card shadow mb-4" id="cardResume" style="display: none;">
+                        <div class="card-header bg-dark text-white">
+                            <h4 class="mb-0">📊 Résumé de la Simulation</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h5 class="text-primary" id="resumeNature">0</h5>
+                                        <small class="text-muted">Distributions Nature</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h5 class="text-warning" id="resumeAchats">0</h5>
+                                        <small class="text-muted">Achats Proposés</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h5 class="text-success" id="resumeTotal">0</h5>
+                                        <small class="text-muted">Total Distributions</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h5 class="text-info" id="resumeTaux">0%</h5>
+                                        <small class="text-muted">Taux Satisfaction</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -282,6 +384,105 @@
     <?php include __DIR__ . '/../../public/includes/footer.php'; ?>
     
     <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const baseUrl = '<?= htmlspecialchars($base) ?>';
+        const btnSimuler = document.getElementById('btnSimuler');
+        const btnValider = document.getElementById('btnValider');
+        const spinnerSimuler = document.getElementById('spinnerSimuler');
+        const distributionsData = document.getElementById('distributionsData');
+        
+        let propositionsSimulees = [];
+
+        // Bouton SIMULER
+        btnSimuler.addEventListener('click', function() {
+            spinnerSimuler.classList.remove('d-none');
+            btnSimuler.disabled = true;
+            btnValider.disabled = true;
+
+            fetch(baseUrl + '/api/simulation/lancer')
+                .then(response => response.json())
+                .then(data => {
+                    spinnerSimuler.classList.add('d-none');
+                    btnSimuler.disabled = false;
+
+                    if (data.success && data.distributions) {
+                        propositionsSimulees = data.distributions;
+                        distributionsData.value = JSON.stringify(propositionsSimulees);
+                        
+                        // Séparer nature et achats
+                        const nature = propositionsSimulees.filter(d => d.type === 'nature' || !d.type);
+                        const achats = propositionsSimulees.filter(d => d.type === 'achat');
+
+                        // Afficher tableau nature
+                        if (nature.length > 0) {
+                            document.getElementById('cardPropositionsNature').style.display = 'block';
+                            const tbody = document.querySelector('#tablePropositionsNature tbody');
+                            tbody.innerHTML = nature.map((d, i) => `
+                                <tr>
+                                    <td>${i + 1}</td>
+                                    <td><strong>${d.ville_nom || ''}</strong></td>
+                                    <td>${d.produit_nom || ''}</td>
+                                    <td><span class="badge bg-success">${d.quantite_attribuee || d.quantite || 0}</span></td>
+                                    <td>${d.donateur_nom || ''}</td>
+                                    <td><span class="badge bg-info">Nature</span></td>
+                                </tr>
+                            `).join('');
+                        }
+
+                        // Afficher tableau achats
+                        if (achats.length > 0) {
+                            document.getElementById('cardPropositionsAchats').style.display = 'block';
+                            const tbody = document.querySelector('#tablePropositionsAchats tbody');
+                            tbody.innerHTML = achats.map((d, i) => `
+                                <tr>
+                                    <td>${i + 1}</td>
+                                    <td><strong>${d.ville_nom || ''}</strong></td>
+                                    <td>${d.produit_nom || ''}</td>
+                                    <td>${d.quantite || 0}</td>
+                                    <td>${(d.montant || 0).toLocaleString()} Ar</td>
+                                    <td>${(d.frais || 0).toLocaleString()} Ar</td>
+                                    <td><strong>${(d.total || 0).toLocaleString()} Ar</strong></td>
+                                </tr>
+                            `).join('');
+                        }
+
+                        // Afficher résumé
+                        document.getElementById('cardResume').style.display = 'block';
+                        document.getElementById('resumeNature').textContent = nature.length;
+                        document.getElementById('resumeAchats').textContent = achats.length;
+                        document.getElementById('resumeTotal').textContent = propositionsSimulees.length;
+                        document.getElementById('resumeTaux').textContent = (data.stats?.taux_satisfaction || 0) + '%';
+
+                        // Activer bouton valider
+                        if (propositionsSimulees.length > 0) {
+                            btnValider.disabled = false;
+                        }
+
+                        alert('Simulation terminée: ' + propositionsSimulees.length + ' proposition(s)');
+                    } else {
+                        alert('Aucune proposition générée');
+                    }
+                })
+                .catch(error => {
+                    spinnerSimuler.classList.add('d-none');
+                    btnSimuler.disabled = false;
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de la simulation');
+                });
+        });
+
+        // Confirmation avant validation
+        document.getElementById('formValider').addEventListener('submit', function(e) {
+            if (propositionsSimulees.length === 0) {
+                e.preventDefault();
+                alert('Veuillez d\'abord lancer une simulation');
+                return false;
+            }
+            return confirm('Confirmer la validation de ' + propositionsSimulees.length + ' distribution(s) ?');
+        });
+    });
+    </script>
 </body>
 
 </html>

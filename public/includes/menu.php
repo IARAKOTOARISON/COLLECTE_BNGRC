@@ -64,4 +64,11 @@
         </a>
     </li>
 
+    <li class="nav-item mb-2">
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/recap">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/home.png" alt="recap" class="icon-menu">
+            📊 Récapitulatif
+        </a>
+    </li>
+
 </ul>
