@@ -68,18 +68,18 @@ return [
 	 **************************************/
 	'database' => [
 		
-		// 'host'     => '127.0.0.1',      // Database host (e.g., 'localhost', 'db.example.com')
-		// 'dbname'   => 'BNGRC',   // Database name (e.g., 'flightphp')
-		// 'user'     => 'root',  // Database user (e.g., 'root')
-		// 'password' => '',  // Database password (never commit real passwords)
+		'host'     => '127.0.0.1',      // Database host (e.g., 'localhost', 'db.example.com')
+		'dbname'   => 'BNGRC',   // Database name (e.g., 'flightphp')
+		'user'     => 'root',  // Database user (e.g., 'root')
+		'password' => '',  // Database password (never commit real passwords)
 
 		//--------------DEPLOIEMENT----------------------------------------------------
 
 		
-	 	'host'     => 'localhost:3306',      // Database host (e.g., 'localhost', 'db.example.com')
-	 	'dbname'   => 'db_s2_ETU004231',   // Database name (e.g., 'flightphp')
-	 	'user'     => 'ETU004231',  // Database user (e.g., 'root')
-	 	'password' => '95rwEbSe',  // Database password (never commit real passwords)
+	 	// 'host'     => 'localhost:3306',      // Database host (e.g., 'localhost', 'db.example.com')
+	 	// 'dbname'   => 'db_s2_ETU004231',   // Database name (e.g., 'flightphp')
+	 	// 'user'     => 'ETU004231',  // Database user (e.g., 'root')
+	 	// 'password' => '95rwEbSe',  // Database password (never commit real passwords)
 
 	// 	// SQLite Example:
 	 	// 'file_path' => __DIR__ . $ds . '..' . $ds . 'database.sqlite', // Path to SQLite file

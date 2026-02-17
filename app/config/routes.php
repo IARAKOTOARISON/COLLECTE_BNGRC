@@ -5,6 +5,7 @@ use app\controllers\BesoinController;
 use app\controllers\DonController;
 use app\controllers\VilleController;
 use app\controllers\SimulationController;
+use app\controllers\DispatchController;
 use app\controllers\AchatController;
 use app\controllers\RecapController;
 use app\middlewares\SecurityHeadersMiddleware;
@@ -34,35 +35,62 @@ $router->group('', function(Router $router) use ($app) {
 		$controller->getAllAboutVille();
 	});
 
-	$router->get('/simulation', function () use ($app) {
+	// =========================================================================
+	// DISPATCH DES DONS (nouveau système unifié)
+	// =========================================================================
+	
+	// Page principale dispatch
+	$router->get('/dispatch', function () use ($app) {
 		$db = $app->db();
-		$controller = new SimulationController($db, $app);
-		$controller->afficherSimulation();
+		$controller = new DispatchController($db, $app);
+		$controller->afficherDispatch();
+	});
+
+	// API: Lancer simulation dispatch
+	$router->get('/api/dispatch/lancer', function () use ($app) {
+		$db = $app->db();
+		$controller = new DispatchController($db, $app);
+		$controller->lancerDispatch();
+	});
+
+	// Valider et enregistrer le dispatch
+	$router->post('/dispatch/valider', function () use ($app) {
+		$db = $app->db();
+		$controller = new DispatchController($db, $app);
+		$controller->validerDispatch();
+	});
+
+	// =========================================================================
+	// ANCIENNES ROUTES SIMULATION (redirection vers dispatch pour compatibilité)
+	// =========================================================================
+
+	$router->get('/simulation', function () use ($app) {
+		$baseUrl = $app->get('baseUrl') ?? '';
+		$app->redirect($baseUrl . '/dispatch');
 	});
 
 	$router->post('/simulation/confirmer', function () use ($app) {
 		$db = $app->db();
-		$controller = new SimulationController($db, $app);
-		$controller->confirmerDispatch();
+		$controller = new DispatchController($db, $app);
+		$controller->validerDispatch();
 	});
 
-	// Nouvelles routes simulation
 	$router->get('/api/simulation/lancer', function () use ($app) {
 		$db = $app->db();
-		$controller = new SimulationController($db, $app);
-		$controller->lancerSimulation();
+		$controller = new DispatchController($db, $app);
+		$controller->lancerDispatch();
 	});
 
 	$router->post('/simulation/lancer', function () use ($app) {
 		$db = $app->db();
-		$controller = new SimulationController($db, $app);
-		$controller->lancerSimulation();
+		$controller = new DispatchController($db, $app);
+		$controller->lancerDispatch();
 	});
 
 	$router->post('/simulation/valider', function () use ($app) {
 		$db = $app->db();
-		$controller = new SimulationController($db, $app);
-		$controller->validerSimulation();
+		$controller = new DispatchController($db, $app);
+		$controller->validerDispatch();
 	});
 
 	// Pages statiques / formulaires / listes — routes alignées avec le menu
