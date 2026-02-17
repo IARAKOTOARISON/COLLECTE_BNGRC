@@ -89,6 +89,57 @@ class Don {
     }
 
     /**
+     * Récupérer uniquement les dons financiers (argent) encore disponibles
+     * @return array
+     */
+    public function getDonsArgentDisponibles() {
+        $query = "
+            SELECT d.id, d.montant, d.dateDon, d.donateur_nom, d.idStatus,
+                   COALESCE(SUM(dist.quantite),0) AS quantite_distribuee,
+                   d.montant - COALESCE(SUM(dist.quantite),0) AS montant_restante
+            FROM don d
+            LEFT JOIN distribution dist ON d.id = dist.idDon
+            WHERE d.idProduit IS NULL
+            GROUP BY d.id, d.montant, d.dateDon, d.donateur_nom, d.idStatus
+            HAVING montant_restante > 0
+            ORDER BY d.dateDon ASC, d.id ASC
+        ";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Récupérer les dons par ville (via distributions liées à la ville)
+     * @param int $idVille
+     * @return array
+     */
+    public function getDonsByVille($idVille) {
+        $query = "
+            SELECT DISTINCT d.*
+            FROM don d
+            JOIN distribution dist ON d.id = dist.idDon
+            WHERE dist.idVille = :idVille
+            ORDER BY d.dateDon ASC, d.id ASC
+        ";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([':idVille' => $idVille]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Mettre à jour le statut d'un don
+     * @param int $idDon
+     * @param int $statut
+     * @return bool
+     */
+    public function updateStatutDon($idDon, $statut) {
+        $query = "UPDATE don SET idStatus = :statut WHERE id = :id";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([':statut' => $statut, ':id' => $idDon]);
+    }
+
+    /**
      * Récupérer un don par son ID
      * @param int $id
      * @return array|null

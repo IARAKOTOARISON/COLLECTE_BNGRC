@@ -71,6 +71,44 @@ class Besoin {
     }
 
     /**
+     * Récupérer les besoins restants (même logique que non satisfaits)
+     * @return array
+     */
+    public function getBesoinsRestants() {
+        return $this->getBesoinsNonSatisfaits();
+    }
+
+    /**
+     * Récupérer les besoins d'une ville donnée
+     * @param int $idVille
+     * @return array
+     */
+    public function getBesoinsByVille($idVille) {
+        $query = "
+            SELECT 
+                b.id,
+                b.idVille,
+                b.idProduit,
+                b.quantite,
+                b.dateBesoin,
+                v.nom AS ville_nom,
+                p.nom AS produit_nom,
+                COALESCE(SUM(dist.quantite), 0) AS quantite_distribuee,
+                b.quantite - COALESCE(SUM(dist.quantite), 0) AS quantite_restante
+            FROM besoin b
+            INNER JOIN ville v ON b.idVille = v.id
+            INNER JOIN produit p ON b.idProduit = p.id
+            LEFT JOIN distribution dist ON b.id = dist.idBesoin
+            WHERE b.idVille = :idVille
+            GROUP BY b.id, b.idVille, b.idProduit, b.quantite, b.dateBesoin, v.nom, p.nom
+            ORDER BY b.dateBesoin ASC, b.id ASC
+        ";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([':idVille' => $idVille]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Récupérer un besoin par son ID
      * @param int $id
      * @return array|null
