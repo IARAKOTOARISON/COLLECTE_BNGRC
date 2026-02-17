@@ -238,6 +238,34 @@ $router->group('', function(Router $router) use ($app) {
 		$controller->getAchatsParVille($idVille);
 	});
 
+	// API stats global (retour JSON)
+	$router->get('/api/stats/global', function() use ($app) {
+		$db = $app->db();
+		$controller = new RecapController($db, $app);
+		$controller->getStats();
+	});
+
+	// API achat auto (retour JSON)
+	$router->get('/api/achats/auto', function() use ($app) {
+		$db = $app->db();
+		$controller = new AchatController($db, $app);
+		$controller->proposerAchatsAuto();
+	});
+
+	// API simulation (retour JSON)
+	$router->get('/api/simulation', function() use ($app) {
+		$db = $app->db();
+		$controller = new SimulationController($db, $app);
+		$controller->lancerSimulation();
+	});
+
+	// API validation simulation (retour JSON)
+	$router->post('/api/simulation/valider', function() use ($app) {
+		$db = $app->db();
+		$controller = new SimulationController($db, $app);
+		$controller->validerSimulation();
+	});
+
 	
 
 
