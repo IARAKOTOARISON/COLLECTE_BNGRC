@@ -222,4 +222,182 @@ class SimulationController extends BaseController {
         }
         return null;
     }
+
+    /**
+     * Lancer une simulation complète (JSON)
+     * Route: GET /api/simulation/lancer ou POST /simulation/lancer
+     */
+    public function lancerSimulation(): void {
+        try {
+            $besoinModel = new Besoin($this->db);
+            $donModel = new Don($this->db);
+            
+            // Récupérer les données
+            $besoins = $besoinModel->getBesoinsNonSatisfaits();
+            $dons = $donModel->getDonsDisponibles();
+            
+            // Exécuter l'algorithme de dispatch
+            $distributionsProposees = $this->executerDispatchAutomatique($besoins, $dons);
+            
+            // Calculer les statistiques
+            $stats = [
+                'total_besoins' => count($besoins),
+                'total_dons' => count($dons),
+                'total_distributions' => count($distributionsProposees),
+                'taux_satisfaction' => 0
+            ];
+            
+            // Calculer le taux de satisfaction
+            if (count($besoins) > 0) {
+                $besoins_satisfaits = 0;
+                foreach ($distributionsProposees as $dist) {
+                    $besoin = $this->trouverBesoin($besoins, $dist['idBesoin']);
+                    if ($besoin && $dist['quantite_attribuee'] >= $besoin['quantite_restante']) {
+                        $besoins_satisfaits++;
+                    }
+                }
+                $stats['taux_satisfaction'] = round(($besoins_satisfaits / count($besoins)) * 100);
+            }
+
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'distributions' => $distributionsProposees,
+                'stats' => $stats
+            ]);
+        } catch (\Exception $e) {
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
+    /**
+     * Valider et persister une simulation (JSON ou redirect)
+     * Route: POST /simulation/valider
+     */
+    public function validerSimulation(): void {
+        try {
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                session_start();
+            }
+
+            $distributionModel = new Distribution($this->db);
+            $besoinModel = new Besoin($this->db);
+            $donModel = new Don($this->db);
+
+            // Récupérer les propositions depuis POST (JSON) ou recalculer
+            $payload = $_POST['distributions'] ?? null;
+            
+            if ($payload) {
+                $distributionsProposees = json_decode($payload, true);
+                if (!is_array($distributionsProposees)) {
+                    throw new \Exception('Format de distributions invalide');
+                }
+            } else {
+                // Recalculer si pas de payload
+                $besoins = $besoinModel->getBesoinsNonSatisfaits();
+                $dons = $donModel->getDonsDisponibles();
+                $distributionsProposees = $this->executerDispatchAutomatique($besoins, $dons);
+            }
+
+            $this->db->beginTransaction();
+
+            $count = 0;
+            foreach ($distributionsProposees as $dist) {
+                $data = [
+                    'idBesoin' => $dist['idBesoin'],
+                    'idVille' => $dist['idVille'],
+                    'idDon' => $dist['idDon'],
+                    'quantite' => $dist['quantite_attribuee'] ?? $dist['quantite'] ?? 0,
+                    'idStatusDistribution' => 2,
+                    'dateDistribution' => date('Y-m-d H:i:s')
+                ];
+
+                if ($distributionModel->create($data)) {
+                    $count++;
+                }
+            }
+
+            // Mettre à jour les statuts
+            $this->mettreAJourStatuts($besoinModel, $donModel);
+
+            $this->db->commit();
+
+            // Retourner JSON si requête AJAX
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => true,
+                    'message' => "$count distribution(s) créée(s) avec succès",
+                    'count' => $count
+                ]);
+                exit;
+            }
+
+            $_SESSION['success_message'] = "$count distribution(s) ont été créées avec succès !";
+            $this->app->redirect($this->getBaseUrl() . '/simulation');
+
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ]);
+                exit;
+            }
+
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                session_start();
+            }
+            $_SESSION['error_message'] = "Erreur: " . $e->getMessage();
+            $this->app->redirect($this->getBaseUrl() . '/simulation');
+        }
+    }
+
+    /**
+     * Mettre à jour les statuts des besoins et dons après validation
+     */
+    private function mettreAJourStatuts(Besoin $besoinModel, Don $donModel): void {
+        // Mettre à jour les statuts des besoins
+        $stmt = $this->db->prepare("
+            SELECT b.id, b.quantite, COALESCE(SUM(d.quantite), 0) AS distribue 
+            FROM besoin b 
+            LEFT JOIN distribution d ON b.id = d.idBesoin 
+            GROUP BY b.id
+        ");
+        $stmt->execute();
+        $besoinsEtat = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        
+        foreach ($besoinsEtat as $b) {
+            $reste = $b['quantite'] - $b['distribue'];
+            $status = ($reste <= 0) ? 3 : (($b['distribue'] > 0) ? 2 : 1);
+            $besoinModel->update($b['id'], ['idStatus' => $status]);
+        }
+
+        // Mettre à jour les statuts des dons
+        $stmt2 = $this->db->prepare("
+            SELECT don.id, don.quantite, don.montant, don.idProduit, COALESCE(SUM(distr.quantite), 0) AS distribue 
+            FROM don 
+            LEFT JOIN distribution distr ON don.id = distr.idDon 
+            GROUP BY don.id
+        ");
+        $stmt2->execute();
+        $donsEtat = $stmt2->fetchAll(\PDO::FETCH_ASSOC);
+        
+        foreach ($donsEtat as $dn) {
+            $baseValeur = ($dn['idProduit'] !== null) ? ($dn['quantite'] ?? 0) : ($dn['montant'] ?? 0);
+            $resteDon = $baseValeur - $dn['distribue'];
+            $statusDon = ($resteDon <= 0) ? 3 : (($dn['distribue'] > 0) ? 2 : 1);
+            $donModel->update($dn['id'], ['idStatus' => $statusDon]);
+        }
+    }
 }

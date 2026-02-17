@@ -144,4 +144,117 @@ class AchatController extends BaseController {
         $_SESSION['success_message'] = 'Propositions d\'achats annulées.';
         $this->app->redirect($this->getBaseUrl() . '/achats');
     }
+
+    /**
+     * Acheter automatiquement les besoins sélectionnés (JSON)
+     * Route: POST /achats/auto
+     */
+    public function acheterAuto(): void {
+        try {
+            $besoinIds = $_POST['besoin_ids'] ?? null;
+            
+            if (is_string($besoinIds)) {
+                $besoinIds = json_decode($besoinIds, true);
+            }
+            
+            if (empty($besoinIds) || !is_array($besoinIds)) {
+                throw new \Exception('Aucun besoin sélectionné');
+            }
+
+            // Utiliser le service d'achat automatique
+            $resultat = $this->achatService->acheterBesoins($besoinIds);
+
+            // Retourner JSON si requête AJAX
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode($resultat);
+                exit;
+            }
+
+            // Sinon redirect avec message flash
+            if ($resultat['success']) {
+                $_SESSION['success_message'] = $resultat['message'];
+            } else {
+                $_SESSION['error_message'] = $resultat['message'];
+            }
+            $this->app->redirect($this->getBaseUrl() . '/achats');
+
+        } catch (\Exception $e) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+                exit;
+            }
+
+            $_SESSION['error_message'] = $e->getMessage();
+            $this->app->redirect($this->getBaseUrl() . '/achats');
+        }
+    }
+
+    /**
+     * Vérifier si un besoin peut être acheté (disponibilité fonds)
+     * Route: GET /api/achats/verifier-besoin/{id}
+     */
+    public function verifierBesoin(int $id): void {
+        try {
+            $besoin = $this->besoinModel->getById($id);
+            
+            if (!$besoin) {
+                throw new \Exception("Besoin #$id introuvable");
+            }
+
+            // Calculer le coût avec frais
+            $coutDetails = $this->achatService->calculerCoutAvecFrais($besoin);
+            
+            // Vérifier la disponibilité
+            $disponibilite = $this->achatService->verifierDisponibilite($coutDetails['cout_total']);
+
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'besoin' => [
+                    'id' => $besoin['id'],
+                    'idProduit' => $besoin['idProduit'],
+                    'quantite' => $besoin['quantite'],
+                    'idVille' => $besoin['idVille'],
+                ],
+                'cout' => $coutDetails,
+                'disponibilite' => $disponibilite,
+                'achat_possible' => $disponibilite['disponible'],
+            ]);
+        } catch (\Exception $e) {
+            header('Content-Type: application/json');
+            http_response_code(404);
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
+    /**
+     * Filtrer les achats par ville (JSON)
+     * Route: GET /api/achats/par-ville/{idVille}
+     */
+    public function getAchatsParVille(int $idVille): void {
+        try {
+            $achats = $this->achatModel->getAchatsByVille($idVille);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'achats' => $achats,
+                'count' => count($achats)
+            ]);
+        } catch (\Exception $e) {
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+        exit;
+    }
 }

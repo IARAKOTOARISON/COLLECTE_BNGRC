@@ -6,6 +6,7 @@ use app\controllers\DonController;
 use app\controllers\VilleController;
 use app\controllers\SimulationController;
 use app\controllers\AchatController;
+use app\controllers\RecapController;
 use app\middlewares\SecurityHeadersMiddleware;
 use flight\Engine;
 use flight\net\Router;
@@ -43,6 +44,25 @@ $router->group('', function(Router $router) use ($app) {
 		$db = $app->db();
 		$controller = new SimulationController($db, $app);
 		$controller->confirmerDispatch();
+	});
+
+	// Nouvelles routes simulation
+	$router->get('/api/simulation/lancer', function () use ($app) {
+		$db = $app->db();
+		$controller = new SimulationController($db, $app);
+		$controller->lancerSimulation();
+	});
+
+	$router->post('/simulation/lancer', function () use ($app) {
+		$db = $app->db();
+		$controller = new SimulationController($db, $app);
+		$controller->lancerSimulation();
+	});
+
+	$router->post('/simulation/valider', function () use ($app) {
+		$db = $app->db();
+		$controller = new SimulationController($db, $app);
+		$controller->validerSimulation();
 	});
 
 	// Pages statiques / formulaires / listes — routes alignées avec le menu
@@ -160,6 +180,62 @@ $router->group('', function(Router $router) use ($app) {
 	$router->get('/listeVille', function() use ($app) {
 		$baseUrl = $app->get('baseUrl') ?? '';
 		$app->redirect($baseUrl . '/villes/liste');
+	});
+
+	// RECAP CONTROLLER - Statistiques
+	$router->get('/recap', function() use ($app) {
+		$db = $app->db();
+		$controller = new RecapController($db, $app);
+		$controller->afficherRecap();
+	});
+
+	$router->get('/api/stats', function() use ($app) {
+		$db = $app->db();
+		$controller = new RecapController($db, $app);
+		$controller->getStats();
+	});
+
+	$router->get('/recap/stats', function() use ($app) {
+		$db = $app->db();
+		$controller = new RecapController($db, $app);
+		$controller->getStats();
+	});
+
+	$router->get('/api/stats/besoins', function() use ($app) {
+		$db = $app->db();
+		$controller = new RecapController($db, $app);
+		$controller->getStatsBesoins();
+	});
+
+	$router->get('/api/stats/dons', function() use ($app) {
+		$db = $app->db();
+		$controller = new RecapController($db, $app);
+		$controller->getStatsDons();
+	});
+
+	$router->get('/api/stats/villes', function() use ($app) {
+		$db = $app->db();
+		$controller = new RecapController($db, $app);
+		$controller->getStatsParVille();
+	});
+
+	// ACHAT - Nouvelles routes
+	$router->post('/achats/auto', function() use ($app) {
+		$db = $app->db();
+		$controller = new AchatController($db, $app);
+		$controller->acheterAuto();
+	});
+
+	$router->get('/api/achats/verifier-besoin/@id', function(int $id) use ($app) {
+		$db = $app->db();
+		$controller = new AchatController($db, $app);
+		$controller->verifierBesoin($id);
+	});
+
+	$router->get('/api/achats/par-ville/@idVille', function(int $idVille) use ($app) {
+		$db = $app->db();
+		$controller = new AchatController($db, $app);
+		$controller->getAchatsParVille($idVille);
 	});
 
 	
