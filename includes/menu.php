@@ -37,6 +37,11 @@
             Liste Villes
         </a>
     </li>
-
+    <li class="nav-item mb-2">
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/simulation">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/proposition.png" alt="simulation" class="icon-menu">
+            Simulation Dispatch
+        </a>
+    </li>
     
 </ul>
