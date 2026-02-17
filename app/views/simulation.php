@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php $base = isset($baseUrl) ? rtrim($baseUrl, '/') : ''; ?>
+    <meta name="base-url" content="<?= htmlspecialchars($base) ?>">
     <link href="<?= htmlspecialchars($base) ?>/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?= htmlspecialchars($base) ?>/assets/css/style.css" rel="stylesheet">
     <title>Simulation de Dispatch Manuel - BNGRC</title>
@@ -60,7 +61,7 @@
                             <div class="card border-warning">
                                 <div class="card-body text-center">
                                     <h6 class="text-warning">Besoins Non Satisfaits</h6>
-                                    <h2 class="display-6"><?= $stats['total_besoins'] ?? 0 ?></h2>
+                                    <h2 class="display-6" id="statBesoins"><?= $stats['total_besoins'] ?? 0 ?></h2>
                                     <small class="text-muted">En attente d'affectation</small>
                                 </div>
                             </div>
@@ -69,7 +70,7 @@
                             <div class="card border-success">
                                 <div class="card-body text-center">
                                     <h6 class="text-success">Dons Disponibles</h6>
-                                    <h2 class="display-6"><?= $stats['total_dons'] ?? 0 ?></h2>
+                                    <h2 class="display-6" id="statDons"><?= $stats['total_dons'] ?? 0 ?></h2>
                                     <small class="text-muted">Non encore affectés</small>
                                 </div>
                             </div>
@@ -78,7 +79,7 @@
                             <div class="card border-primary">
                                 <div class="card-body text-center">
                                     <h6 class="text-primary">Distributions Proposées</h6>
-                                    <h2 class="display-6"><?= $stats['total_distributions'] ?? 0 ?></h2>
+                                    <h2 class="display-6" id="statDistributions"><?= $stats['total_distributions'] ?? 0 ?></h2>
                                     <small class="text-muted">Affectations créées</small>
                                 </div>
                             </div>
@@ -87,11 +88,26 @@
                             <div class="card border-info">
                                 <div class="card-body text-center">
                                     <h6 class="text-info">Taux de Satisfaction</h6>
-                                    <h2 class="display-6"><?= $stats['taux_satisfaction'] ?? 0 ?>%</h2>
+                                    <h2 class="display-6" id="statTaux"><?= $stats['taux_satisfaction'] ?? 0 ?>%</h2>
                                     <small class="text-muted">Besoins couverts</small>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Boutons SIMULER et VALIDER -->
+                    <div class="d-flex gap-3 mb-4">
+                        <button type="button" id="btnSimuler" class="btn btn-primary btn-lg">
+                            <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="spinnerSimuler"></span>
+                            🔄 SIMULER
+                        </button>
+                        <form method="POST" action="<?= htmlspecialchars($base) ?>/simulation/valider" id="formValider" style="display: inline;">
+                            <input type="hidden" name="distributions" id="distributionsData" value="">
+                            <button type="submit" id="btnValider" class="btn btn-success btn-lg" disabled>
+                                <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="spinnerValider"></span>
+                                ✓ VALIDER
+                            </button>
+                        </form>
                     </div>
 
                     <!-- Tableau 1: Besoins non satisfaits -->
@@ -191,9 +207,9 @@
                         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                             <h4 class="mb-0">3. Distributions Proposées Automatiquement</h4>
                             <?php if (!empty($distributions)): ?>
-                                <form method="POST" action="<?= htmlspecialchars($base) ?>/simulation/confirmer" style="display: inline;">
-                                    <button type="submit" class="btn btn-success btn-lg" onclick="return confirm('Confirmer l\'enregistrement de <?= count($distributions) ?> distribution(s) en base de données ?');">
-                                        ✓ Confirmer et Enregistrer
+                                <form method="POST" action="<?= htmlspecialchars($base) ?>/simulation/confirmer" style="display: inline;" id="formConfirmer">
+                                    <button type="submit" class="btn btn-success btn-lg" id="btnConfirmer">
+                                        ✓ Confirmer et Enregistrer (<?= count($distributions) ?>)
                                     </button>
                                 </form>
                             <?php endif; ?>
@@ -274,6 +290,94 @@
                             <?php endif; ?>
                         </div>
                     </div>
+
+                    <!-- Tableau 4: Propositions Nature (AJAX) -->
+                    <div class="card shadow mb-4" id="cardPropositionsNature" style="display: none;">
+                        <div class="card-header bg-info text-white">
+                            <h4 class="mb-0">📦 Propositions Nature (Dons en nature)</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="tablePropositionsNature">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Ville</th>
+                                            <th>Produit</th>
+                                            <th>Quantité</th>
+                                            <th>Donateur</th>
+                                            <th>Statut</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Rempli dynamiquement via AJAX -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tableau 5: Propositions Achats (AJAX) -->
+                    <div class="card shadow mb-4" id="cardPropositionsAchats" style="display: none;">
+                        <div class="card-header bg-warning text-dark">
+                            <h4 class="mb-0">💰 Propositions Achats (Dons financiers)</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="tablePropositionsAchats">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Ville</th>
+                                            <th>Produit</th>
+                                            <th>Quantité</th>
+                                            <th>Coût estimé</th>
+                                            <th>Frais</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Rempli dynamiquement via AJAX -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Résumé Simulation (AJAX) -->
+                    <div class="card shadow mb-4" id="cardResume" style="display: none;">
+                        <div class="card-header bg-dark text-white">
+                            <h4 class="mb-0">📊 Résumé de la Simulation</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h5 class="text-primary" id="resumeNature">0</h5>
+                                        <small class="text-muted">Distributions Nature</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h5 class="text-warning" id="resumeAchats">0</h5>
+                                        <small class="text-muted">Achats Proposés</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h5 class="text-success" id="resumeTotal">0</h5>
+                                        <small class="text-muted">Total Distributions</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h5 class="text-info" id="resumeTaux">0%</h5>
+                                        <small class="text-muted">Taux Satisfaction</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -282,6 +386,233 @@
     <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/footer.php'; ?>
     
     <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const baseUrl = '<?= htmlspecialchars($base) ?>';
+        const btnSimuler = document.getElementById('btnSimuler');
+        const btnValider = document.getElementById('btnValider');
+        const spinnerSimuler = document.getElementById('spinnerSimuler');
+        const distributionsData = document.getElementById('distributionsData');
+        
+        let propositionsSimulees = [];
+
+        if (!btnSimuler) return;
+
+        // Bouton SIMULER
+        btnSimuler.addEventListener('click', function(e) {
+            e.preventDefault();
+            spinnerSimuler.classList.remove('d-none');
+            btnSimuler.disabled = true;
+            btnValider.disabled = true;
+
+            fetch(baseUrl + '/api/simulation/lancer', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                spinnerSimuler.classList.add('d-none');
+                btnSimuler.disabled = false;
+
+                if (data.success && data.distributions) {
+                    propositionsSimulees = data.distributions;
+                    distributionsData.value = JSON.stringify(propositionsSimulees);
+                    
+                    // Séparer nature et achats
+                    const nature = propositionsSimulees.filter(d => d.type === 'nature' || !d.type);
+                    const achats = propositionsSimulees.filter(d => d.type === 'achat');
+
+                    // Afficher tableau nature
+                    const cardNature = document.getElementById('cardPropositionsNature');
+                    if (nature.length > 0 && cardNature) {
+                        cardNature.style.display = 'block';
+                        const tbody = document.querySelector('#tablePropositionsNature tbody');
+                        if (tbody) {
+                            tbody.innerHTML = nature.map((d, i) => `
+                                <tr>
+                                    <td>${i + 1}</td>
+                                    <td><strong>${escapeHtml(d.ville_nom || '')}</strong></td>
+                                    <td>${escapeHtml(d.produit_nom || '')}</td>
+                                    <td><span class="badge bg-success">${d.quantite_attribuee || d.quantite || 0}</span></td>
+                                    <td>${escapeHtml(d.donateur_nom || '')}</td>
+                                    <td><span class="badge bg-info">Nature</span></td>
+                                </tr>
+                            `).join('');
+                        }
+                    }
+
+                    // Afficher tableau achats
+                    const cardAchats = document.getElementById('cardPropositionsAchats');
+                    if (achats.length > 0 && cardAchats) {
+                        cardAchats.style.display = 'block';
+                        const tbody = document.querySelector('#tablePropositionsAchats tbody');
+                        if (tbody) {
+                            tbody.innerHTML = achats.map((d, i) => `
+                                <tr>
+                                    <td>${i + 1}</td>
+                                    <td><strong>${escapeHtml(d.ville_nom || '')}</strong></td>
+                                    <td>${escapeHtml(d.produit_nom || '')}</td>
+                                    <td>${d.quantite || 0}</td>
+                                    <td>${formatMontant(d.montant || 0)} Ar</td>
+                                    <td>${formatMontant(d.frais || 0)} Ar</td>
+                                    <td><strong>${formatMontant(d.total || 0)} Ar</strong></td>
+                                </tr>
+                            `).join('');
+                        }
+                    }
+
+                    // Afficher résumé
+                    const cardResume = document.getElementById('cardResume');
+                    if (cardResume) {
+                        cardResume.style.display = 'block';
+                        document.getElementById('resumeNature').textContent = nature.length;
+                        document.getElementById('resumeAchats').textContent = achats.length;
+                        document.getElementById('resumeTotal').textContent = propositionsSimulees.length;
+                        document.getElementById('resumeTaux').textContent = (data.stats?.taux_satisfaction || 0) + '%';
+                    }
+
+                    // Mettre à jour les statistiques en haut de page
+                    if (data.stats) {
+                        const statBesoins = document.getElementById('statBesoins');
+                        const statDons = document.getElementById('statDons');
+                        const statDistributions = document.getElementById('statDistributions');
+                        const statTaux = document.getElementById('statTaux');
+                        
+                        if (statBesoins) statBesoins.textContent = data.stats.total_besoins || 0;
+                        if (statDons) statDons.textContent = data.stats.total_dons || 0;
+                        if (statDistributions) statDistributions.textContent = data.stats.total_distributions || 0;
+                        if (statTaux) statTaux.textContent = (data.stats.taux_satisfaction || 0) + '%';
+                    }
+
+                    // Activer bouton valider
+                    if (propositionsSimulees.length > 0) {
+                        btnValider.disabled = false;
+                    } else {
+                        btnValider.disabled = true;
+                    }
+
+                    showAlert('success', 'Simulation terminée: ' + propositionsSimulees.length + ' proposition(s)');
+                } else {
+                    showAlert('warning', data.message || 'Aucune proposition générée');
+                    btnValider.disabled = true;
+                }
+            })
+            .catch(error => {
+                spinnerSimuler.classList.add('d-none');
+                btnSimuler.disabled = false;
+                console.error('Erreur:', error);
+                showAlert('danger', 'Erreur lors de la simulation: ' + error.message);
+            });
+        });
+
+        // Confirmation avant validation
+        const formValider = document.getElementById('formValider');
+        const spinnerValider = document.getElementById('spinnerValider');
+        
+        if (formValider) {
+            formValider.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (propositionsSimulees.length === 0) {
+                    showAlert('warning', 'Veuillez d\'abord lancer une simulation');
+                    return false;
+                }
+                
+                if (!confirm('Confirmer la validation de ' + propositionsSimulees.length + ' distribution(s) ?')) {
+                    return false;
+                }
+                
+                // Afficher le spinner et désactiver le bouton
+                spinnerValider.classList.remove('d-none');
+                btnValider.disabled = true;
+                btnSimuler.disabled = true;
+                
+                // Envoyer via AJAX
+                const formData = new FormData();
+                formData.append('distributions', JSON.stringify(propositionsSimulees));
+                
+                fetch(baseUrl + '/simulation/valider', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    spinnerValider.classList.add('d-none');
+                    
+                    if (data.success) {
+                        showAlert('success', data.message || 'Distributions enregistrées avec succès');
+                        // Recharger la page après 1.5 secondes
+                        setTimeout(() => window.location.reload(), 1500);
+                    } else {
+                        showAlert('danger', data.message || 'Erreur lors de la validation');
+                        btnValider.disabled = false;
+                        btnSimuler.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    spinnerValider.classList.add('d-none');
+                    btnValider.disabled = false;
+                    btnSimuler.disabled = false;
+                    console.error('Erreur:', error);
+                    showAlert('danger', 'Erreur lors de la validation: ' + error.message);
+                });
+            });
+        }
+
+        // Confirmation pour le bouton "Confirmer et Enregistrer"
+        const formConfirmer = document.getElementById('formConfirmer');
+        if (formConfirmer) {
+            formConfirmer.addEventListener('submit', function(e) {
+                const count = document.getElementById('btnConfirmer').textContent.match(/\((\d+)\)/);
+                const nb = count ? count[1] : 'toutes les';
+                if (!confirm('Confirmer l\'enregistrement de ' + nb + ' distribution(s) en base de données ?')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        }
+
+        // Fonctions utilitaires
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function formatMontant(val) {
+            return new Intl.NumberFormat('fr-FR').format(val || 0);
+        }
+
+        function showAlert(type, message) {
+            const container = document.querySelector('main .container-fluid');
+            if (!container) return;
+            
+            // Supprimer les alertes existantes
+            const existing = container.querySelectorAll('.alert-auto');
+            existing.forEach(el => el.remove());
+            
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show alert-auto" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            container.insertAdjacentHTML('afterbegin', alertHtml);
+            
+            setTimeout(() => {
+                const alert = container.querySelector('.alert-auto');
+                if (alert) alert.remove();
+            }, 5000);
+        }
+    });
+    </script>
 </body>
 
 </html>

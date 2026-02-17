@@ -105,15 +105,13 @@
                                             <th scope="col">Type</th>
                                             <th scope="col">Description</th>
                                             <th scope="col">Quantité/Montant</th>
-                                            <th scope="col">Ville Destinataire</th>
                                             <th scope="col">Statut</th>
-                                            <th scope="col">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php if (empty($dons)): ?>
                                             <tr>
-                                                <td colspan="9" class="text-center py-4">
+                                                <td colspan="7" class="text-center py-4">
                                                     <p class="text-muted mb-0">Aucun don enregistré pour le moment.</p>
                                                 </td>
                                             </tr>
@@ -144,7 +142,6 @@
                                                             <?= number_format($don['montant'], 0, ',', ' ') ?> Ar
                                                         <?php endif; ?>
                                                     </td>
-                                                    <td>Non spécifié</td>
                                                     <td>
                                                         <?php
                                                         $statusClass = 'bg-secondary';
@@ -158,9 +155,6 @@
                                                         }
                                                         ?>
                                                         <span class="badge <?= $statusClass ?>"><?= htmlspecialchars($don['status_nom']) ?></span>
-                                                    </td>
-                                                    <td>
-                                                        <button class="btn btn-sm btn-primary">Voir</button>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>

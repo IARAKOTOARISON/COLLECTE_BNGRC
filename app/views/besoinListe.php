@@ -83,7 +83,6 @@
                                             <th scope="col">Produit</th>
                                             <th scope="col">Quantité</th>
                                             <th scope="col">Statut</th>
-                                            <th scope="col">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -109,16 +108,11 @@
                                                     <td><?= htmlspecialchars($besoin['produit_nom'] ?? 'N/A') ?></td>
                                                     <td><?= htmlspecialchars($besoin['quantite'] ?? '0') ?></td>
                                                     <td><span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($besoin['status_nom'] ?? 'N/A') ?></span></td>
-                                                    <td>
-                                                        <button class="btn btn-sm btn-primary" title="Voir détails">
-                                                            <i class="bi bi-eye"></i> Voir
-                                                        </button>
-                                                    </td>
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php else: ?>
                                             <tr>
-                                                <td colspan="7" class="text-center py-4">
+                                                <td colspan="6" class="text-center py-4">
                                                     <em class="text-muted">Aucun besoin enregistré pour le moment.</em>
                                                 </td>
                                             </tr>

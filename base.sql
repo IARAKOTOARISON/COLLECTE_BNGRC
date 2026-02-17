@@ -141,24 +141,49 @@ CREATE TABLE distribution (
     )
 ); 
 
+-- ============================================
+-- Table: parametres (clé-valeur générique)
+-- ============================================
+CREATE TABLE parametres (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    cle VARCHAR(100) NOT NULL UNIQUE,
+    valeur TEXT NULL,
+    description TEXT NULL
+);
 
+-- ============================================
+-- Table: achat
+-- Représente un achat lié éventuellement à un don (pour frais, achats groupés, etc.)
+-- ============================================
+CREATE TABLE achat (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    id_don INT NULL,
+    date_achat DATETIME NOT NULL,
+    montant_total DECIMAL(15,2) NOT NULL,
+    frais_appliques DECIMAL(15,2) NOT NULL DEFAULT 0,
+    FOREIGN KEY (id_don) REFERENCES don(id)
+);
 
+-- ============================================
+-- Table: achat_details
+-- Détails d'un achat : produits achetés, quantité et prix unitaire
+-- ============================================
+CREATE TABLE achat_details (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    id_achat INT NOT NULL,
+    id_produit INT NOT NULL,
+    quantite DECIMAL(15,2) NOT NULL,
+    prix_unitaire DECIMAL(15,2) NOT NULL,
+    FOREIGN KEY (id_achat) REFERENCES achat(id),
+    FOREIGN KEY (id_produit) REFERENCES produit(id)
+);
 
-
-
-
-
-
-
-
-
-
-
-
-
+-- Optionnel : ajouter la colonne id_achat dans la table distribution pour lier une distribution à un achat
+ALTER TABLE distribution
+    ADD COLUMN id_achat INT NULL,
+    ADD CONSTRAINT fk_distribution_achat FOREIGN KEY (id_achat) REFERENCES achat(id);
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------
-
 
 
 -- ============================================
@@ -230,6 +255,22 @@ JOIN statusDon sd ON d.idStatus = sd.id
 WHERE sd.nom = 'Disponible'
 ORDER BY d.dateDon;
 
+-- 3. Historique des distributions par ville
+SELECT 
+    v.nom AS ville,
+    CASE 
+        WHEN d.idProduit IS NOT NULL THEN p.nom
+        ELSE 'Argent'
+    END AS type_distribue,
+    COALESCE(dist.quantite, dist.montant) AS valeur,
+    dist.dateDistribution,
+    sdist.nom AS status
+FROM distribution dist
+JOIN ville v ON dist.idVille = v.id
+LEFT JOIN don d ON dist.idDon = d.id
+LEFT JOIN produit p ON d.idProduit = p.id
+JOIN statusDistribution sdist ON dist.idStatusDistribution = sdist.id
+ORDER BY dist.dateDistribution DESC;
 -- 3. Historique des distributions par ville
 SELECT 
     v.nom AS ville,
