@@ -6,6 +6,7 @@ use app\models\AchatDetails;
 use app\models\Besoin;
 use app\models\Don;
 use app\models\AchatAutoService;
+use app\models\Ville;
 use flight\Engine;
 
 class AchatController extends BaseController {
@@ -29,6 +30,16 @@ class AchatController extends BaseController {
      */
     public function afficherPageAchats(): void {
         $achats = $this->achatModel->getAllAchats();
+        
+        // Charger les villes pour le filtre
+        $villeModel = new Ville($this->db);
+        $villes = $villeModel->getAll();
+
+        // Appliquer le filtre par ville si présent
+        $idVille = isset($_GET['ville']) ? (int)$_GET['ville'] : null;
+        if ($idVille) {
+            $achats = $this->achatModel->getAchatsByVille($idVille);
+        }
 
         $success = $_SESSION['success_message'] ?? null;
         $error = $_SESSION['error_message'] ?? null;
@@ -37,6 +48,8 @@ class AchatController extends BaseController {
         // render the `achatListe` view we created earlier
         $this->app->render('achatListe', [
             'achats' => $achats,
+            'villes' => $villes,
+            'villeSelectionnee' => $idVille,
             'success' => $success,
             'error' => $error,
             'baseUrl' => $this->getBaseUrl()

@@ -35,13 +35,20 @@
                                 <select id="villeFilter" name="ville" class="form-select">
                                     <option value="">Toutes</option>
                                     <?php if (!empty($villes)): foreach ($villes as $v): ?>
-                                        <option value="<?= (int)$v['id'] ?>"><?= htmlspecialchars($v['nom']) ?></option>
+                                        <option value="<?= (int)$v['id'] ?>" <?= (isset($villeSelectionnee) && $villeSelectionnee == $v['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($v['nom']) ?>
+                                        </option>
                                     <?php endforeach; endif; ?>
                                 </select>
                             </div>
                             <div class="col-auto">
                                 <button class="btn btn-primary">Filtrer</button>
                             </div>
+                            <?php if (!empty($villeSelectionnee)): ?>
+                            <div class="col-auto">
+                                <a href="<?= htmlspecialchars($base) ?>/achats" class="btn btn-secondary">Réinitialiser</a>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </form>
                 </div>
