@@ -386,7 +386,7 @@
     <?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/footer.php'; ?>
     
     <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script<?php if (!empty($nonce)): ?> nonce="<?= htmlspecialchars($nonce) ?>"<?php endif; ?>>
     document.addEventListener('DOMContentLoaded', function() {
         const baseUrl = '<?= htmlspecialchars($base) ?>';
         const btnSimuler = document.getElementById('btnSimuler');
@@ -394,7 +394,14 @@
         const spinnerSimuler = document.getElementById('spinnerSimuler');
         const distributionsData = document.getElementById('distributionsData');
         
-        let propositionsSimulees = [];
+        // Initialiser avec les distributions déjà calculées côté serveur (si disponibles)
+        let propositionsSimulees = <?= json_encode($distributions ?? []) ?>;
+        
+        // Pré-remplir le champ caché si des distributions existent
+        if (propositionsSimulees.length > 0) {
+            distributionsData.value = JSON.stringify(propositionsSimulees);
+            btnValider.disabled = false;
+        }
 
         if (!btnSimuler) return;
 
@@ -514,69 +521,26 @@
         
         if (formValider) {
             formValider.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
+                // Vérifier qu'une simulation a été lancée
                 if (propositionsSimulees.length === 0) {
+                    e.preventDefault();
                     showAlert('warning', 'Veuillez d\'abord lancer une simulation');
                     return false;
                 }
                 
-                if (!confirm('Confirmer la validation de ' + propositionsSimulees.length + ' distribution(s) ?')) {
-                    return false;
-                }
-                
-                // Afficher le spinner et désactiver le bouton
+                // Afficher le spinner et désactiver les boutons
                 spinnerValider.classList.remove('d-none');
                 btnValider.disabled = true;
                 btnSimuler.disabled = true;
                 
-                // Envoyer via AJAX
-                const formData = new FormData();
-                formData.append('distributions', JSON.stringify(propositionsSimulees));
-                
-                fetch(baseUrl + '/simulation/valider', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    spinnerValider.classList.add('d-none');
-                    
-                    if (data.success) {
-                        showAlert('success', data.message || 'Distributions enregistrées avec succès');
-                        // Recharger la page après 1.5 secondes
-                        setTimeout(() => window.location.reload(), 1500);
-                    } else {
-                        showAlert('danger', data.message || 'Erreur lors de la validation');
-                        btnValider.disabled = false;
-                        btnSimuler.disabled = false;
-                    }
-                })
-                .catch(error => {
-                    spinnerValider.classList.add('d-none');
-                    btnValider.disabled = false;
-                    btnSimuler.disabled = false;
-                    console.error('Erreur:', error);
-                    showAlert('danger', 'Erreur lors de la validation: ' + error.message);
-                });
+                // Le formulaire sera soumis normalement via POST
+                // Les données sont déjà dans distributionsData.value
+                return true;
             });
         }
 
-        // Confirmation pour le bouton "Confirmer et Enregistrer"
-        const formConfirmer = document.getElementById('formConfirmer');
-        if (formConfirmer) {
-            formConfirmer.addEventListener('submit', function(e) {
-                const count = document.getElementById('btnConfirmer').textContent.match(/\((\d+)\)/);
-                const nb = count ? count[1] : 'toutes les';
-                if (!confirm('Confirmer l\'enregistrement de ' + nb + ' distribution(s) en base de données ?')) {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-        }
+        // Le formulaire "Confirmer et Enregistrer" soumet directement sans popup
+        // La validation se fait côté serveur
 
         // Fonctions utilitaires
         function escapeHtml(str) {

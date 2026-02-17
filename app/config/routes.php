@@ -5,6 +5,7 @@ use app\controllers\BesoinController;
 use app\controllers\DonController;
 use app\controllers\VilleController;
 use app\controllers\SimulationController;
+use app\controllers\DispatchController;
 use app\controllers\AchatController;
 use app\controllers\RecapController;
 use app\controllers\ReinitializeController;
@@ -36,35 +37,62 @@ $router->group('', function(Router $router) use ($app) {
 		$controller->getAllAboutVille();
 	});
 
-	$router->get('/simulation', function () use ($app) {
+	// =========================================================================
+	// DISPATCH DES DONS (nouveau système unifié)
+	// =========================================================================
+	
+	// Page principale dispatch
+	$router->get('/dispatch', function () use ($app) {
 		$db = $app->db();
-		$controller = new SimulationController($db, $app);
-		$controller->afficherSimulation();
+		$controller = new DispatchController($db, $app);
+		$controller->afficherDispatch();
+	});
+
+	// API: Lancer simulation dispatch
+	$router->get('/api/dispatch/lancer', function () use ($app) {
+		$db = $app->db();
+		$controller = new DispatchController($db, $app);
+		$controller->lancerDispatch();
+	});
+
+	// Valider et enregistrer le dispatch
+	$router->post('/dispatch/valider', function () use ($app) {
+		$db = $app->db();
+		$controller = new DispatchController($db, $app);
+		$controller->validerDispatch();
+	});
+
+	// =========================================================================
+	// ANCIENNES ROUTES SIMULATION (redirection vers dispatch pour compatibilité)
+	// =========================================================================
+
+	$router->get('/simulation', function () use ($app) {
+		$baseUrl = $app->get('baseUrl') ?? '';
+		$app->redirect($baseUrl . '/dispatch');
 	});
 
 	$router->post('/simulation/confirmer', function () use ($app) {
 		$db = $app->db();
-		$controller = new SimulationController($db, $app);
-		$controller->confirmerDispatch();
+		$controller = new DispatchController($db, $app);
+		$controller->validerDispatch();
 	});
 
-	// Nouvelles routes simulation
 	$router->get('/api/simulation/lancer', function () use ($app) {
 		$db = $app->db();
-		$controller = new SimulationController($db, $app);
-		$controller->lancerSimulation();
+		$controller = new DispatchController($db, $app);
+		$controller->lancerDispatch();
 	});
 
 	$router->post('/simulation/lancer', function () use ($app) {
 		$db = $app->db();
-		$controller = new SimulationController($db, $app);
-		$controller->lancerSimulation();
+		$controller = new DispatchController($db, $app);
+		$controller->lancerDispatch();
 	});
 
 	$router->post('/simulation/valider', function () use ($app) {
 		$db = $app->db();
-		$controller = new SimulationController($db, $app);
-		$controller->validerSimulation();
+		$controller = new DispatchController($db, $app);
+		$controller->validerDispatch();
 	});
 
 	// Pages statiques / formulaires / listes — routes alignées avec le menu
@@ -124,16 +152,18 @@ $router->group('', function(Router $router) use ($app) {
 		$controller->afficherPageAchats();
 	});
 
-	$router->get('/achats/auto/proposer', function() use ($app) {
+	// Page d'achat manuel (conversion argent -> matériel)
+	$router->get('/achats/proposer', function() use ($app) {
 		$db = $app->db();
 		$controller = new AchatController($db, $app);
 		$controller->proposerAchatsAuto();
 	});
 
-	$router->post('/achats/auto/valider', function() use ($app) {
+	// Validation achat manuel
+	$router->post('/achats/manuel/valider', function() use ($app) {
 		$db = $app->db();
 		$controller = new AchatController($db, $app);
-		$controller->validerAchatsAuto();
+		$controller->validerAchatManuel();
 	});
 
 	// API endpoints pour achats / besoins
@@ -228,13 +258,6 @@ $router->group('', function(Router $router) use ($app) {
 		$controller->getStatsParVille();
 	});
 
-	// ACHAT - Nouvelles routes
-	$router->post('/achats/auto', function() use ($app) {
-		$db = $app->db();
-		$controller = new AchatController($db, $app);
-		$controller->acheterAuto();
-	});
-
 	$router->get('/api/achats/verifier-besoin/@id', function(int $id) use ($app) {
 		$db = $app->db();
 		$controller = new AchatController($db, $app);
@@ -252,13 +275,6 @@ $router->group('', function(Router $router) use ($app) {
 		$db = $app->db();
 		$controller = new RecapController($db, $app);
 		$controller->getStats();
-	});
-
-	// API achat auto (retour JSON)
-	$router->get('/api/achats/auto', function() use ($app) {
-		$db = $app->db();
-		$controller = new AchatController($db, $app);
-		$controller->proposerAchatsAuto();
 	});
 
 	// API simulation (retour JSON)

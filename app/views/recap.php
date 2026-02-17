@@ -289,7 +289,7 @@
     <?php include __DIR__ . '/../../public/includes/footer.php'; ?>
     
     <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script<?php if (!empty($nonce)): ?> nonce="<?= htmlspecialchars($nonce) ?>"<?php endif; ?>>
     document.addEventListener('DOMContentLoaded', function() {
         const baseUrl = '<?= htmlspecialchars($base) ?>';
         const btnActualiser = document.getElementById('btnActualiser');

@@ -38,9 +38,9 @@
         </a>
     </li>
     <li class="nav-item mb-2">
-        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/simulation">
-            <img src="<?= htmlspecialchars($base) ?>/assets/icons/proposition.png" alt="simulation" class="icon-menu">
-            Simulation Dispatch
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/dispatch">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/proposition.png" alt="dispatch" class="icon-menu">
+            Dispatch des Dons
         </a>
     </li>
     <li class="nav-item mb-2">
@@ -58,9 +58,9 @@
     </li>
 
     <li class="nav-item mb-2">
-        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/achats/auto/proposer">
-            <img src="<?= htmlspecialchars($base) ?>/assets/icons/proposition.png" alt="achats-auto" class="icon-menu">
-            Proposer achats auto
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/achats/proposer">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/proposition.png" alt="achats-manuel" class="icon-menu">
+            Effectuer un Achat
         </a>
     </li>
 

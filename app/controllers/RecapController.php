@@ -52,7 +52,8 @@ class RecapController extends BaseController {
             'stats' => $stats,
             'graphiques' => $graphiques,
             'financier' => $financier,
-            'baseUrl' => $this->getBaseUrl()
+            'baseUrl' => $this->getBaseUrl(),
+            'nonce' => $this->getNonce()
         ]);
     }
 

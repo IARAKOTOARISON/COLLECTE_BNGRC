@@ -44,7 +44,8 @@ class DonController extends BaseController {
             'statusList' => $statusList,
             'success' => $success,
             'error' => $error,
-            'baseUrl' => $this->getBaseUrl()
+            'baseUrl' => $this->getBaseUrl(),
+            'nonce' => $this->getNonce()
         ]);
     }
 
@@ -158,7 +159,8 @@ class DonController extends BaseController {
         $this->app->render('donListe', [
             'dons' => $dons,
             'stats' => $stats,
-            'baseUrl' => $this->getBaseUrl()
+            'baseUrl' => $this->getBaseUrl(),
+            'nonce' => $this->getNonce()
         ]);
     }
 }

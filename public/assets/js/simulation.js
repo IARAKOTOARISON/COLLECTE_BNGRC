@@ -90,12 +90,7 @@
             const btnValider = document.getElementById('btnValider');
             if (btnValider) btnValider.disabled = true;
 
-            // Afficher confirmation
-            if (!confirm(`Confirmer la validation de ${propositionsSimulees.length} distribution(s) ?`)) {
-                if (btnValider) btnValider.disabled = false;
-                reject(new Error('Annulé par l\'utilisateur'));
-                return;
-            }
+            // Soumission directe sans popup de confirmation
 
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout);

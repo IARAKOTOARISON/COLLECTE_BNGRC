@@ -78,7 +78,8 @@ class TableauBordController extends BaseController {
         $this->app->render('tableauBord', [
             'aboutVille' => $besoinsAvecStats,
             'stats' => $stats,
-            'baseUrl' => $this->getBaseUrl()
+            'baseUrl' => $this->getBaseUrl(),
+            'nonce' => $this->getNonce()
         ]);
     }
     
