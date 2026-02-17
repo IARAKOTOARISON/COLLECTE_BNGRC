@@ -9,6 +9,16 @@
     <link href="<?= htmlspecialchars($base) ?>/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?= htmlspecialchars($base) ?>/assets/css/style.css" rel="stylesheet">
     <title>Achats Manuels - BNGRC</title>
+    <style>
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake-animation {
+            animation: shake 0.3s ease-in-out;
+        }
+    </style>
 </head>
 
 <body class="d-flex flex-column min-vh-100">
@@ -389,6 +399,7 @@
         
         // Formulaire
         const form = document.getElementById('formAchatManuel');
+        const messageValidation = document.getElementById('messageValidation');
         if (form) {
             form.addEventListener('submit', function(e) {
                 const montant = getMontantDon();
@@ -398,15 +409,16 @@
                 
                 if (total > montant) {
                     e.preventDefault();
-                    alert('Budget insuffisant pour cet achat !');
+                    // Afficher erreur dans le message de validation (pas de popup)
+                    if (messageValidation) {
+                        messageValidation.innerHTML = '<span class="text-danger fw-bold">⚠️ Budget insuffisant pour cet achat !</span>';
+                        messageValidation.classList.add('shake-animation');
+                        setTimeout(() => messageValidation.classList.remove('shake-animation'), 500);
+                    }
                     return false;
                 }
                 
-                const produitNom = selectProduit.selectedOptions[0]?.text.split('(')[0].trim() || 'ce produit';
-                if (!confirm('Confirmer l\'achat de ' + qte + ' unité(s) de ' + produitNom + ' pour ' + Math.round(total).toLocaleString('fr-FR') + ' Ar ?')) {
-                    e.preventDefault();
-                    return false;
-                }
+                // Soumission directe sans popup de confirmation
             });
         }
         

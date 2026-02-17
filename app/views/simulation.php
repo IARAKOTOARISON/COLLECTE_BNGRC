@@ -539,18 +539,8 @@
             });
         }
 
-        // Confirmation pour le bouton "Confirmer et Enregistrer"
-        const formConfirmer = document.getElementById('formConfirmer');
-        if (formConfirmer) {
-            formConfirmer.addEventListener('submit', function(e) {
-                const count = document.getElementById('btnConfirmer').textContent.match(/\((\d+)\)/);
-                const nb = count ? count[1] : 'toutes les';
-                if (!confirm('Confirmer l\'enregistrement de ' + nb + ' distribution(s) en base de données ?')) {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-        }
+        // Le formulaire "Confirmer et Enregistrer" soumet directement sans popup
+        // La validation se fait côté serveur
 
         // Fonctions utilitaires
         function escapeHtml(str) {
