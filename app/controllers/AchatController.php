@@ -33,7 +33,7 @@ class AchatController extends BaseController {
         
         // Charger les villes pour le filtre
         $villeModel = new Ville($this->db);
-        $villes = $villeModel->getAll();
+        $villes = $villeModel->getAllVilles();
 
         // Appliquer le filtre par ville si présent
         $idVille = isset($_GET['ville']) ? (int)$_GET['ville'] : null;
