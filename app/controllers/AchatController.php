@@ -34,7 +34,8 @@ class AchatController extends BaseController {
         $error = $_SESSION['error_message'] ?? null;
         unset($_SESSION['success_message'], $_SESSION['error_message']);
 
-        $this->app->render('pageAchats', [
+        // render the `achatListe` view we created earlier
+        $this->app->render('achatListe', [
             'achats' => $achats,
             'success' => $success,
             'error' => $error,
