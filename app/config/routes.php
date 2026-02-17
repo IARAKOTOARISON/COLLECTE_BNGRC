@@ -122,16 +122,18 @@ $router->group('', function(Router $router) use ($app) {
 		$controller->afficherPageAchats();
 	});
 
-	$router->get('/achats/auto/proposer', function() use ($app) {
+	// Page d'achat manuel (conversion argent -> matériel)
+	$router->get('/achats/proposer', function() use ($app) {
 		$db = $app->db();
 		$controller = new AchatController($db, $app);
 		$controller->proposerAchatsAuto();
 	});
 
-	$router->post('/achats/auto/valider', function() use ($app) {
+	// Validation achat manuel
+	$router->post('/achats/manuel/valider', function() use ($app) {
 		$db = $app->db();
 		$controller = new AchatController($db, $app);
-		$controller->validerAchatsAuto();
+		$controller->validerAchatManuel();
 	});
 
 	// API endpoints pour achats / besoins
@@ -226,13 +228,6 @@ $router->group('', function(Router $router) use ($app) {
 		$controller->getStatsParVille();
 	});
 
-	// ACHAT - Nouvelles routes
-	$router->post('/achats/auto', function() use ($app) {
-		$db = $app->db();
-		$controller = new AchatController($db, $app);
-		$controller->acheterAuto();
-	});
-
 	$router->get('/api/achats/verifier-besoin/@id', function(int $id) use ($app) {
 		$db = $app->db();
 		$controller = new AchatController($db, $app);
@@ -250,13 +245,6 @@ $router->group('', function(Router $router) use ($app) {
 		$db = $app->db();
 		$controller = new RecapController($db, $app);
 		$controller->getStats();
-	});
-
-	// API achat auto (retour JSON)
-	$router->get('/api/achats/auto', function() use ($app) {
-		$db = $app->db();
-		$controller = new AchatController($db, $app);
-		$controller->proposerAchatsAuto();
 	});
 
 	// API simulation (retour JSON)

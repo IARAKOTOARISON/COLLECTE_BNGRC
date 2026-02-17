@@ -23,4 +23,12 @@ class BaseController {
     protected function getBaseUrl(): string {
         return $this->app->get('baseUrl') ?? '';
     }
+
+    /**
+     * Récupère le nonce CSP pour les scripts inline
+     * @return string Le nonce généré pour cette requête
+     */
+    protected function getNonce(): string {
+        return $this->app->get('csp_nonce') ?? '';
+    }
 }

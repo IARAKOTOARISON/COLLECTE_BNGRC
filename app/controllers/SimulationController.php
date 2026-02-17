@@ -60,7 +60,8 @@ class SimulationController extends BaseController {
             'stats' => $stats,
             'success' => $success,
             'error' => $error,
-            'baseUrl' => $this->getBaseUrl()
+            'baseUrl' => $this->getBaseUrl(),
+            'nonce' => $this->app->get('csp_nonce')
         ]);
     }
 

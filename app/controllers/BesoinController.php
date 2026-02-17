@@ -44,7 +44,8 @@ class BesoinController extends BaseController {
             'statusList' => $statusList,
             'success' => $success,
             'error' => $error,
-            'baseUrl' => $this->getBaseUrl()
+            'baseUrl' => $this->getBaseUrl(),
+            'nonce' => $this->getNonce()
         ]);
     }
 
@@ -127,7 +128,8 @@ class BesoinController extends BaseController {
         $this->app->render('besoinListe', [
             'besoins' => $besoins,
             'stats' => $stats,
-            'baseUrl' => $this->getBaseUrl()
+            'baseUrl' => $this->getBaseUrl(),
+            'nonce' => $this->getNonce()
         ]);
     }
 }

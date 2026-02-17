@@ -48,7 +48,8 @@ class VilleController extends BaseController {
             'stats' => $stats,
             'success' => $success,
             'error' => $error,
-            'baseUrl' => $this->getBaseUrl()
+            'baseUrl' => $this->getBaseUrl(),
+            'nonce' => $this->getNonce()
         ]);
     }
 }

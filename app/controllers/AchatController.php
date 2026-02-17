@@ -52,7 +52,8 @@ class AchatController extends BaseController {
             'villeSelectionnee' => $idVille,
             'success' => $success,
             'error' => $error,
-            'baseUrl' => $this->getBaseUrl()
+            'baseUrl' => $this->getBaseUrl(),
+            'nonce' => $this->getNonce()
         ]);
     }
 
@@ -74,18 +75,16 @@ class AchatController extends BaseController {
 
         $this->app->render('besoinsRestantsPourAchat', [
             'besoins' => $besoins,
-            'baseUrl' => $this->getBaseUrl()
+            'baseUrl' => $this->getBaseUrl(),
+            'nonce' => $this->getNonce()
         ]);
     }
 
     /**
-     * Proposer automatiquement des achats pour les besoins prioritaires
-     * Affiche une page HTML avec les propositions d'achat
+     * Afficher la page d'achat manuel
+     * Permet de sélectionner un don financier, un produit et une quantité
      */
     public function proposerAchatsAuto(): void {
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
-        $besoins = $this->achatService->getBesoinsPrioritaires($limit);
-        
         // Récupérer les dons en argent disponibles
         $donsArgent = $this->donModel->getDonsArgentDisponibles();
         $totalDonsArgent = array_sum(array_column($donsArgent, 'montant_restant'));
@@ -94,39 +93,40 @@ class AchatController extends BaseController {
         $stmt = $this->db->query("SELECT valeur FROM parametres WHERE cle = 'frais_achat_pourcent'");
         $fraisPourcent = (float)($stmt->fetchColumn() ?: 10);
         
-        $propositions = [];
-        foreach ($besoins as $b) {
-            $cout = $this->achatService->calculerCoutTotal($b);
-            $frais = $cout * ($fraisPourcent / 100);
-            $total = $cout + $frais;
-            
-            $propositions[] = [
-                'idBesoin' => $b['id'] ?? null,
-                'idVille' => $b['idVille'] ?? null,
-                'ville_nom' => $b['ville_nom'] ?? '',
-                'idProduit' => $b['idProduit'] ?? null,
-                'produit_nom' => $b['produit_nom'] ?? '',
-                'quantite' => $b['quantite'] ?? 0,
-                'prixUnitaire' => $b['prixUnitaire'] ?? 0,
-                'coutEstime' => $cout,
-                'frais' => $frais,
-                'total' => $total,
-                'dateBesoin' => $b['dateBesoin'] ?? '',
-            ];
-        }
+        // Récupérer les besoins restants (pour référence)
+        $besoinsRestants = $this->besoinModel->getBesoinsNonSatisfaits();
+        
+        // Récupérer tous les produits disponibles
+        $stmt = $this->db->query("SELECT id, nom, prixUnitaire FROM produit ORDER BY nom");
+        $produits = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        
+        // Récupérer les achats récents (10 derniers)
+        $stmt = $this->db->query("
+            SELECT a.id, a.date_achat, a.montant_total, a.frais_appliques, 
+                   ad.quantite, p.nom as produit_nom
+            FROM achat a
+            LEFT JOIN achat_details ad ON a.id = ad.id_achat
+            LEFT JOIN produit p ON ad.id_produit = p.id
+            ORDER BY a.date_achat DESC
+            LIMIT 10
+        ");
+        $achatsRecents = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         $success = $_SESSION['success_message'] ?? null;
         $error = $_SESSION['error_message'] ?? null;
         unset($_SESSION['success_message'], $_SESSION['error_message']);
 
         $this->app->render('achatProposition', [
-            'propositions' => $propositions,
             'donsArgent' => $donsArgent,
             'totalDonsArgent' => $totalDonsArgent,
             'fraisPourcent' => $fraisPourcent,
+            'besoinsRestants' => $besoinsRestants,
+            'produits' => $produits,
+            'achatsRecents' => $achatsRecents,
             'success' => $success,
             'error' => $error,
-            'baseUrl' => $this->getBaseUrl()
+            'baseUrl' => $this->getBaseUrl(),
+            'nonce' => $this->getNonce()
         ]);
     }
     
@@ -420,5 +420,124 @@ class AchatController extends BaseController {
             ]);
         }
         exit;
+    }
+
+    /**
+     * Valider un achat manuel
+     * Transforme l'argent en matériel :
+     * - Diminue le montant du don financier
+     * - Crée un nouveau don en nature avec le produit acheté
+     * Route: POST /achats/manuel/valider
+     */
+    public function validerAchatManuel(): void {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        
+        try {
+            // Récupérer les données du formulaire
+            $idDon = isset($_POST['id_don']) ? (int)$_POST['id_don'] : 0;
+            $idProduit = isset($_POST['id_produit']) ? (int)$_POST['id_produit'] : 0;
+            $quantite = isset($_POST['quantite']) ? (float)$_POST['quantite'] : 0;
+            
+            if ($idDon <= 0 || $idProduit <= 0 || $quantite <= 0) {
+                throw new \Exception('Données invalides. Veuillez remplir tous les champs.');
+            }
+            
+            // Récupérer le don financier
+            $stmt = $this->db->prepare("
+                SELECT d.id, d.montant, d.dateDon, d.donateur_nom, d.idStatus,
+                       d.montant - COALESCE(SUM(dist.montant), 0) AS montant_restant
+                FROM don d
+                LEFT JOIN distribution dist ON d.id = dist.idDon
+                WHERE d.id = ? AND d.idProduit IS NULL
+                GROUP BY d.id
+            ");
+            $stmt->execute([$idDon]);
+            $don = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if (!$don) {
+                throw new \Exception('Don financier introuvable.');
+            }
+            
+            // Récupérer le produit
+            $stmt = $this->db->prepare("SELECT id, nom, prixUnitaire FROM produit WHERE id = ?");
+            $stmt->execute([$idProduit]);
+            $produit = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if (!$produit) {
+                throw new \Exception('Produit introuvable.');
+            }
+            
+            // Récupérer le taux de frais
+            $stmt = $this->db->query("SELECT valeur FROM parametres WHERE cle = 'frais_achat_pourcent'");
+            $fraisPourcent = (float)($stmt->fetchColumn() ?: 10);
+            
+            // Calculer le coût total
+            $prixUnitaire = (float)$produit['prixUnitaire'];
+            $coutProduits = $prixUnitaire * $quantite;
+            $frais = $coutProduits * ($fraisPourcent / 100);
+            $totalDebiter = $coutProduits + $frais;
+            
+            // Vérifier le budget
+            $montantRestant = (float)$don['montant_restant'];
+            if ($totalDebiter > $montantRestant) {
+                throw new \Exception("Budget insuffisant. Montant disponible: " . number_format($montantRestant, 0, ',', ' ') . " Ar");
+            }
+            
+            $this->db->beginTransaction();
+            
+            // 1. Créer l'enregistrement achat
+            $stmt = $this->db->prepare("
+                INSERT INTO achat (id_don, date_achat, montant_total, frais_appliques)
+                VALUES (?, NOW(), ?, ?)
+            ");
+            $stmt->execute([$idDon, $coutProduits, $frais]);
+            $idAchat = $this->db->lastInsertId();
+            
+            // 2. Créer le détail de l'achat
+            $stmt = $this->db->prepare("
+                INSERT INTO achat_details (id_achat, id_produit, quantite, prix_unitaire)
+                VALUES (?, ?, ?, ?)
+            ");
+            $stmt->execute([$idAchat, $idProduit, $quantite, $prixUnitaire]);
+            
+            // 3. Créer un nouveau don en nature avec le produit acheté
+            // Ce nouveau don représente le matériel acheté, disponible pour distribution
+            $stmt = $this->db->prepare("
+                INSERT INTO don (idProduit, quantite, dateDon, idStatus, donateur_nom)
+                VALUES (?, ?, NOW(), 1, ?)
+            ");
+            $donateurNom = 'Achat #' . $idAchat . ' (' . ($don['donateur_nom'] ?? 'Anonyme') . ')';
+            $stmt->execute([$idProduit, $quantite, $donateurNom]);
+            $idNouveauDon = $this->db->lastInsertId();
+            
+            // 4. Créer une distribution pour tracer l'utilisation de l'argent
+            // Cela débitera automatiquement le don financier via les calculs de montant_restant
+            $stmt = $this->db->prepare("
+                INSERT INTO distribution (idBesoin, idDon, idVille, montant, dateDistribution, idStatusDistribution, id_achat)
+                VALUES ((SELECT id FROM besoin LIMIT 1), ?, 1, ?, NOW(), 2, ?)
+            ");
+            // Note: idBesoin=1 et idVille=1 sont des valeurs par défaut, 
+            // car cet achat n'est pas lié à un besoin spécifique
+            // On utilise montant au lieu de quantite pour les dons financiers
+            $stmt->execute([$idDon, $totalDebiter, $idAchat]);
+            
+            $this->db->commit();
+            
+            $_SESSION['success_message'] = "Achat effectué avec succès ! " .
+                number_format($quantite, 0, ',', ' ') . " " . $produit['nom'] . " achetés pour " .
+                number_format($totalDebiter, 0, ',', ' ') . " Ar (dont " . 
+                number_format($frais, 0, ',', ' ') . " Ar de frais). " .
+                "Un nouveau don en nature a été créé (ID: $idNouveauDon).";
+            
+        } catch (\Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            $_SESSION['error_message'] = 'Erreur: ' . $e->getMessage();
+        }
+        
+        $this->app->redirect($this->getBaseUrl() . '/achats/proposer');
     }
 }

@@ -214,7 +214,7 @@
     <?php include __DIR__ . '/../../public/includes/footer.php'; ?>
     
     <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script<?php if (!empty($nonce)): ?> nonce="<?= htmlspecialchars($nonce) ?>"<?php endif; ?>>
         // Gestion du type de don
         const donNature = document.getElementById('donNature');
         const donArgent = document.getElementById('donArgent');

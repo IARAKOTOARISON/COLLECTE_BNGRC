@@ -95,13 +95,13 @@ class Don {
     public function getDonsArgentDisponibles() {
         $query = "
             SELECT d.id, d.montant, d.dateDon, d.donateur_nom, d.idStatus,
-                   COALESCE(SUM(dist.quantite),0) AS quantite_distribuee,
-                   d.montant - COALESCE(SUM(dist.quantite),0) AS montant_restante
+                   COALESCE(SUM(dist.montant),0) AS montant_distribue,
+                   d.montant - COALESCE(SUM(dist.montant),0) AS montant_restant
             FROM don d
             LEFT JOIN distribution dist ON d.id = dist.idDon
             WHERE d.idProduit IS NULL
             GROUP BY d.id, d.montant, d.dateDon, d.donateur_nom, d.idStatus
-            HAVING montant_restante > 0
+            HAVING montant_restant > 0
             ORDER BY d.dateDon ASC, d.id ASC
         ";
         $stmt = $this->db->prepare($query);
@@ -157,10 +157,18 @@ class Don {
      * @return bool
      */
     public function create($data) {
-        $query = "INSERT INTO don (donateur, type, description, montant, date, ville, statut)
-                  VALUES (:donateur, :type, :description, :montant, :date, :ville, :statut)";
+        // Utilisation des vraies colonnes de la table don
+        $query = "INSERT INTO don (idProduit, montant, quantite, dateDon, idStatus, donateur_nom)
+                  VALUES (:idProduit, :montant, :quantite, :dateDon, :idStatus, :donateur_nom)";
         $stmt = $this->db->prepare($query);
-        return $stmt->execute($data);
+        return $stmt->execute([
+            ':idProduit' => $data['idProduit'] ?? null,
+            ':montant' => $data['montant'] ?? null,
+            ':quantite' => $data['quantite'] ?? null,
+            ':dateDon' => $data['dateDon'] ?? date('Y-m-d H:i:s'),
+            ':idStatus' => $data['idStatus'] ?? 1,
+            ':donateur_nom' => $data['donateur_nom'] ?? null
+        ]);
     }
 
     /**
