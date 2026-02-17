@@ -4,6 +4,8 @@ namespace app\controllers;
 use app\models\Besoin;
 use app\models\Don;
 use app\models\Distribution;
+use app\models\Historique;
+
 use flight\Engine;
 
 class SimulationController extends BaseController {
@@ -281,6 +283,89 @@ class SimulationController extends BaseController {
      * Valider et persister une simulation (JSON ou redirect)
      * Route: POST /simulation/valider
      */
+    // public function validerSimulation(): void {
+    //     try {
+    //         if (session_status() !== PHP_SESSION_ACTIVE) {
+    //             session_start();
+    //         }
+
+    //         $distributionModel = new Distribution($this->db);
+    //         $besoinModel = new Besoin($this->db);
+    //         $donModel = new Don($this->db);
+
+    //         // Récupérer les propositions depuis POST (JSON) ou recalculer
+    //         $payload = $_POST['distributions'] ?? null;
+            
+    //         if ($payload) {
+    //             $distributionsProposees = json_decode($payload, true);
+    //             if (!is_array($distributionsProposees)) {
+    //                 throw new \Exception('Format de distributions invalide');
+    //             }
+    //         } else {
+    //             // Recalculer si pas de payload
+    //             $besoins = $besoinModel->getBesoinsNonSatisfaits();
+    //             $dons = $donModel->getDonsDisponibles();
+    //             $distributionsProposees = $this->executerDispatchAutomatique($besoins, $dons);
+    //         }
+
+    //         $this->db->beginTransaction();
+
+    //         $count = 0;
+    //         foreach ($distributionsProposees as $dist) {
+    //             $data = [
+    //                 'idBesoin' => $dist['idBesoin'],
+    //                 'idVille' => $dist['idVille'],
+    //                 'idDon' => $dist['idDon'],
+    //                 'quantite' => $dist['quantite_attribuee'] ?? $dist['quantite'] ?? 0,
+    //                 'idStatusDistribution' => 2,
+    //                 'dateDistribution' => date('Y-m-d H:i:s')
+    //             ];
+
+    //             if ($distributionModel->create($data)) {
+    //                 $count++;
+    //             }
+    //         }
+
+    //         // Mettre à jour les statuts
+    //         $this->mettreAJourStatuts($besoinModel, $donModel);
+
+    //         $this->db->commit();
+
+    //         // Retourner JSON si requête AJAX
+    //         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+    //             header('Content-Type: application/json');
+    //             echo json_encode([
+    //                 'success' => true,
+    //                 'message' => "$count distribution(s) créée(s) avec succès",
+    //                 'count' => $count
+    //             ]);
+    //             exit;
+    //         }
+
+    //         $_SESSION['success_message'] = "$count distribution(s) ont été créées avec succès !";
+    //         $this->app->redirect($this->getBaseUrl() . '/simulation');
+
+    //     } catch (\Exception $e) {
+    //         $this->db->rollBack();
+            
+    //         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+    //             header('Content-Type: application/json');
+    //             http_response_code(500);
+    //             echo json_encode([
+    //                 'success' => false,
+    //                 'message' => $e->getMessage()
+    //             ]);
+    //             exit;
+    //         }
+
+    //         if (session_status() !== PHP_SESSION_ACTIVE) {
+    //             session_start();
+    //         }
+    //         $_SESSION['error_message'] = "Erreur: " . $e->getMessage();
+    //         $this->app->redirect($this->getBaseUrl() . '/simulation');
+    //     }
+    // }
+
     public function validerSimulation(): void {
         try {
             if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -290,31 +375,37 @@ class SimulationController extends BaseController {
             $distributionModel = new Distribution($this->db);
             $besoinModel = new Besoin($this->db);
             $donModel = new Don($this->db);
+            $historiqueModel = new Historique($this->db); // AJOUT
 
-            // Récupérer les propositions depuis POST (JSON) ou recalculer
             $payload = $_POST['distributions'] ?? null;
-            
+
             if ($payload) {
                 $distributionsProposees = json_decode($payload, true);
                 if (!is_array($distributionsProposees)) {
                     throw new \Exception('Format de distributions invalide');
                 }
             } else {
-                // Recalculer si pas de payload
                 $besoins = $besoinModel->getBesoinsNonSatisfaits();
                 $dons = $donModel->getDonsDisponibles();
                 $distributionsProposees = $this->executerDispatchAutomatique($besoins, $dons);
             }
 
+            // DÉBUT TRANSACTION
             $this->db->beginTransaction();
 
+            // SAUVEGARDE AVANT MODIFICATION
+            $historiqueModel->copierDansHistorique('besoin', 'historique_besoin');
+            $historiqueModel->copierDansHistorique('don', 'historique_don');
+            $historiqueModel->copierDansHistorique('distribution', 'historique_distribution');
+
             $count = 0;
+
             foreach ($distributionsProposees as $dist) {
                 $data = [
                     'idBesoin' => $dist['idBesoin'],
                     'idVille' => $dist['idVille'],
                     'idDon' => $dist['idDon'],
-                    'quantite' => $dist['quantite_attribuee'] ?? $dist['quantite'] ?? 0,
+                    'quantite' => $dist['quantite_attribuee'] ?? 0,
                     'idStatusDistribution' => 2,
                     'dateDistribution' => date('Y-m-d H:i:s')
                 ];
@@ -324,45 +415,21 @@ class SimulationController extends BaseController {
                 }
             }
 
-            // Mettre à jour les statuts
+            // Mise à jour des statuts
             $this->mettreAJourStatuts($besoinModel, $donModel);
 
             $this->db->commit();
 
-            // Retourner JSON si requête AJAX
-            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-                header('Content-Type: application/json');
-                echo json_encode([
-                    'success' => true,
-                    'message' => "$count distribution(s) créée(s) avec succès",
-                    'count' => $count
-                ]);
-                exit;
-            }
-
-            $_SESSION['success_message'] = "$count distribution(s) ont été créées avec succès !";
+            $_SESSION['success_message'] = "$count distribution(s) créée(s) avec succès !";
             $this->app->redirect($this->getBaseUrl() . '/simulation');
 
         } catch (\Exception $e) {
             $this->db->rollBack();
-            
-            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-                header('Content-Type: application/json');
-                http_response_code(500);
-                echo json_encode([
-                    'success' => false,
-                    'message' => $e->getMessage()
-                ]);
-                exit;
-            }
-
-            if (session_status() !== PHP_SESSION_ACTIVE) {
-                session_start();
-            }
-            $_SESSION['error_message'] = "Erreur: " . $e->getMessage();
+            $_SESSION['error_message'] = "Erreur : " . $e->getMessage();
             $this->app->redirect($this->getBaseUrl() . '/simulation');
         }
     }
+
 
     /**
      * Mettre à jour les statuts des besoins et dons après validation
