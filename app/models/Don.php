@@ -197,5 +197,26 @@ class Don {
         $stmt = $this->db->prepare($query);
         return $stmt->execute([':id' => $id]);
     }
+
+    /**
+     * Récupérer les dons en argent disponibles (alias avec détails)
+     * @return array
+     */
+    public function getDonsArgent() {
+        return $this->getDonsArgentDisponibles();
+    }
+
+    /**
+     * Charger les dons disponibles pour un besoin donné (filtre par ville ou global)
+     * @param int|null $idVille
+     * @return array
+     */
+    public function chargerDonsDisponibles($idVille = null) {
+        if ($idVille) {
+            return $this->getDonsByVille($idVille);
+        }
+        return $this->getDonsDisponibles();
+    }
 }
+
 ?>

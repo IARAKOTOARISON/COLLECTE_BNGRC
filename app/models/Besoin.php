@@ -166,5 +166,170 @@ class Besoin {
         $stmt = $this->db->prepare($query);
         return $stmt->execute([':id' => $id]);
     }
+
+    /**
+     * Calculer le coût total avec frais pour un montant donné
+     * @param float $montant Montant de base
+     * @return float Montant avec frais (montant * 1.1 par défaut = +10% frais)
+     */
+    public function calculerCoutAvecFrais($montant) {
+        // Récupérer le taux de frais depuis parametres si disponible, sinon 10%
+        try {
+            $stmt = $this->db->prepare("SELECT valeur FROM parametres WHERE cle = 'frais_achat' LIMIT 1");
+            $stmt->execute();
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $tauxFrais = $row ? (float)$row['valeur'] : 10;
+        } catch (\PDOException $e) {
+            // Table parametres absente ou autre erreur — utiliser 10% par défaut
+            $tauxFrais = 10;
+        }
+        return $montant * (1 + ($tauxFrais / 100));
+    }
+
+    /**
+     * Vérifier si un don financier peut couvrir un montant donné
+     * @param int $idDon
+     * @param float $montant
+     * @return bool
+     */
+    public function verifierDonDisponible($idDon, $montant) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT d.montant, COALESCE(SUM(dist.quantite), 0) AS utilise
+                FROM don d
+                LEFT JOIN distribution dist ON d.id = dist.idDon
+                WHERE d.id = :idDon AND d.idProduit IS NULL
+                GROUP BY d.id, d.montant
+            ");
+            $stmt->execute([':idDon' => $idDon]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            if (!$row) return false;
+            $restant = $row['montant'] - $row['utilise'];
+            return ($restant >= $montant);
+        } catch (\PDOException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Acheter automatiquement des besoins sélectionnés en utilisant un don financier
+     * @param array $besoinIds Liste d'IDs de besoins
+     * @return array Résultat avec succès/échec et détails
+     */
+    public function acheterBesoinsAuto($besoinIds) {
+        if (empty($besoinIds)) {
+            return ['success' => false, 'message' => 'Aucun besoin sélectionné'];
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            // Récupérer dons financiers disponibles
+            $donModel = new Don($this->db);
+            $donsArgent = $donModel->getDonsArgentDisponibles();
+            if (empty($donsArgent)) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Aucun don financier disponible'];
+            }
+
+            $achatService = new AchatAutoService($this->db);
+            $achatsCreated = [];
+
+            foreach ($besoinIds as $idBesoin) {
+                $besoin = $this->getById($idBesoin);
+                if (!$besoin) continue;
+
+                $cout = $achatService->calculerCoutTotal($besoin);
+                $coutAvecFrais = $this->calculerCoutAvecFrais($cout);
+
+                // Trouver un don qui peut couvrir
+                $donUtilise = null;
+                foreach ($donsArgent as $don) {
+                    if ($this->verifierDonDisponible($don['id'], $coutAvecFrais)) {
+                        $donUtilise = $don;
+                        break;
+                    }
+                }
+
+                if (!$donUtilise) continue;
+
+                // Créer l'achat
+                $idAchat = $achatService->acheterBesoin($besoin, (int)$donUtilise['id']);
+                if ($idAchat) {
+                    $achatsCreated[] = $idAchat;
+                    // Créer distribution
+                    $mapping = [[
+                        'idBesoin' => $idBesoin,
+                        'idDon' => $donUtilise['id'],
+                        'idVille' => $besoin['idVille'] ?? 1,
+                        'quantite' => $besoin['quantite'] ?? 0,
+                        'idStatusDistribution' => 2,
+                        'dateDistribution' => date('Y-m-d H:i:s')
+                    ]];
+                    $achatService->creerDistributionDepuisAchat($idAchat, $mapping);
+                }
+            }
+
+            $this->db->commit();
+            return [
+                'success' => true,
+                'message' => count($achatsCreated) . ' achat(s) créé(s)',
+                'achats' => $achatsCreated
+            ];
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Acheter manuellement un besoin (avec sélection explicite du don)
+     * @param int $idBesoin
+     * @param int $idDon
+     * @return array Résultat avec succès/échec
+     */
+    public function acheterBesoinManuel($idBesoin, $idDon) {
+        try {
+            $this->db->beginTransaction();
+
+            $besoin = $this->getById($idBesoin);
+            if (!$besoin) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Besoin introuvable'];
+            }
+
+            $achatService = new AchatAutoService($this->db);
+            $cout = $achatService->calculerCoutTotal($besoin);
+            $coutAvecFrais = $this->calculerCoutAvecFrais($cout);
+
+            if (!$this->verifierDonDisponible($idDon, $coutAvecFrais)) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Don insuffisant'];
+            }
+
+            $idAchat = $achatService->acheterBesoin($besoin, $idDon);
+            if (!$idAchat) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Échec création achat'];
+            }
+
+            // Créer distribution
+            $mapping = [[
+                'idBesoin' => $idBesoin,
+                'idDon' => $idDon,
+                'idVille' => $besoin['idVille'] ?? 1,
+                'quantite' => $besoin['quantite'] ?? 0,
+                'idStatusDistribution' => 2,
+                'dateDistribution' => date('Y-m-d H:i:s')
+            ]];
+            $achatService->creerDistributionDepuisAchat($idAchat, $mapping);
+
+            $this->db->commit();
+            return ['success' => true, 'message' => 'Achat créé', 'idAchat' => $idAchat];
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
 }
 ?>

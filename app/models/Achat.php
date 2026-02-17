@@ -65,4 +65,91 @@ class Achat {
             return false;
         }
     }
+
+    /**
+     * Acheter automatiquement des besoins sélectionnés
+     * @param array $besoinIds
+     * @return array Résultat avec succès/échec et IDs achats créés
+     */
+    public function acheterBesoinsSelectionnes($besoinIds) {
+        if (empty($besoinIds)) {
+            return ['success' => false, 'message' => 'Aucun besoin sélectionné'];
+        }
+
+        try {
+            $this->db->beginTransaction();
+            $besoinModel = new Besoin($this->db);
+            $result = $besoinModel->acheterBesoinsAuto($besoinIds);
+            
+            if ($result['success']) {
+                $this->db->commit();
+            } else {
+                $this->db->rollBack();
+            }
+            return $result;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Soumettre un achat (création manuelle avec validation)
+     * @param array $data Données de l'achat
+     * @return array Résultat
+     */
+    public function soumettreAchat($data) {
+        try {
+            $this->db->beginTransaction();
+            $idAchat = $this->createAchat($data);
+            if (!$idAchat) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Échec création achat'];
+            }
+            $this->db->commit();
+            return ['success' => true, 'idAchat' => $idAchat];
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Lancer un achat automatique selon priorité (besoins les plus anciens)
+     * @return array Résultat avec achats créés
+     */
+    public function lancerAchatAuto() {
+        try {
+            $service = new AchatAutoService($this->db);
+            $besoins = $service->getBesoinsPrioritaires(10);
+            $achatsCreated = [];
+
+            $this->db->beginTransaction();
+            foreach ($besoins as $b) {
+                $dons = $service->verifierDonsDisponibles($b);
+                if (empty($dons)) continue;
+                $don = $dons[0];
+                $idAchat = $service->acheterBesoin($b, (int)($don['id'] ?? $don['ID'] ?? 0));
+                if ($idAchat) {
+                    $achatsCreated[] = $idAchat;
+                    // Créer distribution
+                    $mapping = [[
+                        'idBesoin' => $b['id'],
+                        'idDon' => $don['id'] ?? $don['ID'],
+                        'idVille' => $b['idVille'] ?? 1,
+                        'quantite' => $b['quantite'] ?? 0,
+                        'idStatusDistribution' => 2,
+                        'dateDistribution' => date('Y-m-d H:i:s')
+                    ]];
+                    $service->creerDistributionDepuisAchat($idAchat, $mapping);
+                }
+            }
+            $this->db->commit();
+            return ['success' => true, 'achats' => $achatsCreated, 'count' => count($achatsCreated)];
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
 }
+
