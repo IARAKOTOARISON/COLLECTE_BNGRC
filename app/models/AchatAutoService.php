@@ -112,4 +112,153 @@ class AchatAutoService {
         if (!$idAchat) return false;
         return $idAchat;
     }
+
+    /**
+     * Acheter plusieurs besoins sélectionnés
+     * @param array $besoinIds Liste des IDs de besoins
+     * @return array Résultat avec succès/échec
+     */
+    public function acheterBesoins(array $besoinIds): array {
+        if (empty($besoinIds)) {
+            return ['success' => false, 'message' => 'Aucun besoin sélectionné'];
+        }
+
+        try {
+            $this->db->beginTransaction();
+            
+            $achatsCreees = 0;
+            $montantTotal = 0;
+            $erreurs = [];
+
+            // Récupérer les frais
+            $parametres = new Parametres($this->db);
+            $tauxFrais = (float)$parametres->getFrais() ?: 0;
+
+            // Récupérer les dons argent disponibles
+            $donsArgent = $this->donModel->getDonsArgentDisponibles();
+            if (empty($donsArgent)) {
+                return ['success' => false, 'message' => 'Aucun don financier disponible'];
+            }
+
+            $donCourant = $donsArgent[0];
+            $montantDisponible = (float)($donCourant['montant_restante'] ?? $donCourant['montant'] ?? 0);
+
+            foreach ($besoinIds as $idBesoin) {
+                $besoin = $this->besoinModel->getById($idBesoin);
+                if (!$besoin) {
+                    $erreurs[] = "Besoin #$idBesoin introuvable";
+                    continue;
+                }
+
+                $cout = $this->calculerCoutTotal($besoin);
+                $frais = $cout * ($tauxFrais / 100);
+                $coutTotal = $cout + $frais;
+
+                if ($montantDisponible < $coutTotal) {
+                    $erreurs[] = "Fonds insuffisants pour besoin #$idBesoin";
+                    continue;
+                }
+
+                // Créer l'achat
+                $achatData = [
+                    'id_don' => $donCourant['id'],
+                    'date_achat' => date('Y-m-d H:i:s'),
+                    'montant_total' => $coutTotal,
+                    'frais_appliques' => $frais,
+                ];
+                $idAchat = $this->achatModel->createAchat($achatData);
+                
+                if ($idAchat) {
+                    // Créer distribution liée
+                    $stmt = $this->db->prepare("
+                        INSERT INTO distribution (idBesoin, idDon, idVille, quantite, idStatusDistribution, dateDistribution, id_achat)
+                        VALUES (:idBesoin, :idDon, :idVille, :quantite, 2, NOW(), :id_achat)
+                    ");
+                    $stmt->execute([
+                        ':idBesoin' => $idBesoin,
+                        ':idDon' => $donCourant['id'],
+                        ':idVille' => $besoin['idVille'],
+                        ':quantite' => $besoin['quantite'],
+                        ':id_achat' => $idAchat,
+                    ]);
+
+                    $montantDisponible -= $coutTotal;
+                    $montantTotal += $coutTotal;
+                    $achatsCreees++;
+                }
+            }
+
+            $this->db->commit();
+
+            return [
+                'success' => $achatsCreees > 0,
+                'message' => "$achatsCreees achat(s) effectué(s) pour un total de " . number_format($montantTotal, 2) . " Ar",
+                'achats' => $achatsCreees,
+                'montant_total' => $montantTotal,
+                'erreurs' => $erreurs,
+            ];
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Vérifier la disponibilité des fonds pour couvrir un montant
+     * @param float $montant Montant requis
+     * @return array Résultat avec disponibilité et détails
+     */
+    public function verifierDisponibilite(float $montant): array {
+        try {
+            // Récupérer les dons argent disponibles
+            $donsArgent = $this->donModel->getDonsArgentDisponibles();
+            
+            $totalDisponible = 0;
+            foreach ($donsArgent as $don) {
+                $totalDisponible += (float)($don['montant_restante'] ?? $don['montant'] ?? 0);
+            }
+
+            $disponible = $totalDisponible >= $montant;
+            $manque = $disponible ? 0 : ($montant - $totalDisponible);
+
+            return [
+                'disponible' => $disponible,
+                'montant_requis' => $montant,
+                'montant_disponible' => $totalDisponible,
+                'montant_manquant' => $manque,
+                'nombre_dons' => count($donsArgent),
+            ];
+        } catch (\Exception $e) {
+            return [
+                'disponible' => false,
+                'montant_requis' => $montant,
+                'montant_disponible' => 0,
+                'montant_manquant' => $montant,
+                'nombre_dons' => 0,
+                'erreur' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Calculer le coût total avec frais inclus
+     * @param array $besoin
+     * @return array Détails du coût
+     */
+    public function calculerCoutAvecFrais(array $besoin): array {
+        $coutBase = $this->calculerCoutTotal($besoin);
+        
+        $parametres = new Parametres($this->db);
+        $tauxFrais = (float)$parametres->getFrais() ?: 0;
+        
+        $frais = $coutBase * ($tauxFrais / 100);
+        $total = $coutBase + $frais;
+
+        return [
+            'cout_base' => $coutBase,
+            'taux_frais' => $tauxFrais,
+            'montant_frais' => $frais,
+            'cout_total' => $total,
+        ];
+    }
 }
