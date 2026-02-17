@@ -38,11 +38,11 @@ class StatistiquesService {
             $total = (int)$stmtTotal->fetchColumn();
 
             // Besoins satisfaits (status = 2) - nombre
-            $stmtSatisfaits = $this->db->query("SELECT COUNT(*) as total FROM besoin WHERE idStatusBesoin = 2");
+            $stmtSatisfaits = $this->db->query("SELECT COUNT(*) as total FROM besoin WHERE idStatus = 2");
             $satisfaits = (int)$stmtSatisfaits->fetchColumn();
 
             // Besoins en attente (status = 1) - nombre
-            $stmtEnAttente = $this->db->query("SELECT COUNT(*) as total FROM besoin WHERE idStatusBesoin = 1");
+            $stmtEnAttente = $this->db->query("SELECT COUNT(*) as total FROM besoin WHERE idStatus = 1");
             $enAttente = (int)$stmtEnAttente->fetchColumn();
 
             // MONTANT TOTAL des besoins (quantite * prixUnitaire) en Ariary
@@ -58,7 +58,7 @@ class StatistiquesService {
                 SELECT COALESCE(SUM(b.quantite * p.prixUnitaire), 0) as montant
                 FROM besoin b
                 LEFT JOIN produit p ON b.idProduit = p.id
-                WHERE b.idStatusBesoin = 2
+                WHERE b.idStatus = 2
             ");
             $montantSatisfaits = (float)$stmtMontantSatisfaits->fetchColumn();
 
@@ -67,7 +67,7 @@ class StatistiquesService {
                 SELECT COALESCE(SUM(b.quantite * p.prixUnitaire), 0) as montant
                 FROM besoin b
                 LEFT JOIN produit p ON b.idProduit = p.id
-                WHERE b.idStatusBesoin = 1
+                WHERE b.idStatus = 1
             ");
             $montantRestants = (float)$stmtMontantRestants->fetchColumn();
 
@@ -136,7 +136,7 @@ class StatistiquesService {
             $valeurNature = (float)$stmtValeurNature->fetchColumn();
 
             // Dons distribués (statut 2)
-            $stmtDistribues = $this->db->query("SELECT COUNT(*) FROM don WHERE idStatusDon = 2");
+            $stmtDistribues = $this->db->query("SELECT COUNT(*) FROM don WHERE idStatus = 2");
             $distribues = (int)$stmtDistribues->fetchColumn();
 
             return [
@@ -259,7 +259,7 @@ class StatistiquesService {
                 FROM ville v
                 LEFT JOIN (
                     SELECT idVille, COUNT(*) as total, 
-                           SUM(CASE WHEN idStatusBesoin = 2 THEN 1 ELSE 0 END) as satisfaits
+                           SUM(CASE WHEN idStatus = 2 THEN 1 ELSE 0 END) as satisfaits
                     FROM besoin
                     GROUP BY idVille
                 ) besoins ON v.id = besoins.idVille

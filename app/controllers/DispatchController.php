@@ -360,6 +360,20 @@ class DispatchController extends BaseController {
             }
         }
 
+        // Trier les résultats par ville, puis date, puis produit
+        usort($distributions, function($a, $b) {
+            // 1. Par ville (alphabétique)
+            $cmpVille = strcmp($a['ville_nom'], $b['ville_nom']);
+            if ($cmpVille !== 0) return $cmpVille;
+            
+            // 2. Par date de besoin (chronologique)
+            $cmpDate = strtotime($a['dateBesoin']) - strtotime($b['dateBesoin']);
+            if ($cmpDate !== 0) return $cmpDate;
+            
+            // 3. Par produit (alphabétique)
+            return strcmp($a['produit_nom'], $b['produit_nom']);
+        });
+
         return $distributions;
     }
 
@@ -446,19 +460,36 @@ class DispatchController extends BaseController {
             }
         }
 
+        // Consolider les distributions par ville + produit (même libellé)
+        $distributions = $this->consoliderDistributionsParVilleProduit($distributions);
+
+        // Trier les résultats par ville, puis produit
+        usort($distributions, function($a, $b) {
+            // 1. Par ville (alphabétique)
+            $cmpVille = strcmp($a['ville_nom'], $b['ville_nom']);
+            if ($cmpVille !== 0) return $cmpVille;
+            
+            // 2. Par produit (alphabétique)
+            return strcmp($a['produit_nom'], $b['produit_nom']);
+        });
+
         return $distributions;
     }
 
     // =========================================================================
     // MÉTHODE 3: DISPATCH PAR PROPORTIONNALITÉ
     // Les dons disponibles sont répartis au prorata des demandes
+    // Utilise la méthode des "plus forts restes" (Largest Remainder Method)
     // =========================================================================
 
     /**
      * Dispatch par proportionnalité : répartition au prorata des demandes
      * 
-     * Calcule ratio = total_dons_disponibles / total_demandes
-     * Puis applique ce pourcentage à chaque demande
+     * Algorithme des plus forts restes :
+     * 1. Calculer pour chaque bénéficiaire le nombre théorique (décimal) de dons
+     * 2. Attribuer la partie entière à chaque bénéficiaire
+     * 3. Calculer le reste (somme des parties décimales)
+     * 4. Distribuer le reste un par un aux bénéficiaires avec les plus grandes parties décimales
      * 
      * @param array $besoins Besoins non satisfaits
      * @param array $dons Dons disponibles
@@ -492,7 +523,7 @@ class DispatchController extends BaseController {
             $donsByProduit[$idProduit]['dons'][] = $don;
         }
 
-        // Pour chaque produit, calculer le ratio et distribuer proportionnellement
+        // Pour chaque produit, appliquer l'algorithme des plus forts restes
         foreach ($besoinsByProduit as $idProduit => $besoinsP) {
             // Total des demandes pour ce produit
             $totalDemandes = array_sum(array_column($besoinsP, 'quantite_restante'));
@@ -504,10 +535,65 @@ class DispatchController extends BaseController {
                 continue;
             }
 
-            // Calculer le ratio (ne pas dépasser 100%)
-            $ratio = min(1, $totalDons / $totalDemandes);
+            // Ne pas distribuer plus que ce qui est demandé
+            $quantiteADistribuer = min($totalDons, $totalDemandes);
 
-            // Copie des dons pour ce produit
+            // =====================================================================
+            // ÉTAPE 1: Calculer les parts théoriques (décimales) pour chaque besoin
+            // =====================================================================
+            $partsTheoriques = [];
+            foreach ($besoinsP as $index => $besoin) {
+                // Part théorique = (besoin / total_demandes) * dons_disponibles
+                $partDecimale = ($besoin['quantite_restante'] / $totalDemandes) * $quantiteADistribuer;
+                
+                // Partie entière
+                $partieEntiere = floor($partDecimale);
+                
+                // Partie décimale (reste)
+                $reste = $partDecimale - $partieEntiere;
+                
+                $partsTheoriques[] = [
+                    'index' => $index,
+                    'besoin' => $besoin,
+                    'part_theorique' => $partDecimale,
+                    'partie_entiere' => (int)$partieEntiere,
+                    'partie_decimale' => $reste,
+                    'quantite_finale' => (int)$partieEntiere // Sera ajusté à l'étape 3
+                ];
+            }
+
+            // =====================================================================
+            // ÉTAPE 2: Calculer le reste à distribuer
+            // =====================================================================
+            $sommePartiesEntieres = array_sum(array_column($partsTheoriques, 'partie_entiere'));
+            $reste = $quantiteADistribuer - $sommePartiesEntieres;
+
+            // =====================================================================
+            // ÉTAPE 3: Distribuer le reste aux bénéficiaires avec les plus grandes
+            //          parties décimales (méthode des plus forts restes)
+            // =====================================================================
+            if ($reste > 0) {
+                // Trier par partie décimale décroissante
+                usort($partsTheoriques, function($a, $b) {
+                    // Si égalité de décimales, priorité à la date la plus ancienne
+                    if ($b['partie_decimale'] == $a['partie_decimale']) {
+                        return strtotime($a['besoin']['dateBesoin']) - strtotime($b['besoin']['dateBesoin']);
+                    }
+                    return $b['partie_decimale'] <=> $a['partie_decimale'];
+                });
+
+                // Distribuer le reste un par un
+                for ($i = 0; $i < $reste && $i < count($partsTheoriques); $i++) {
+                    $partsTheoriques[$i]['quantite_finale']++;
+                    $partsTheoriques[$i]['a_recu_bonus'] = true;
+                }
+            }
+
+            // =====================================================================
+            // ÉTAPE 4: Créer les distributions
+            // =====================================================================
+            
+            // Copie des dons disponibles pour ce produit
             $donsRestants = [];
             foreach (($donsByProduit[$idProduit]['dons'] ?? []) as $don) {
                 $donsRestants[$don['id']] = [
@@ -516,21 +602,22 @@ class DispatchController extends BaseController {
                 ];
             }
 
-            // Trier besoins par date pour équité
-            usort($besoinsP, function($a, $b) {
-                return strtotime($a['dateBesoin']) - strtotime($b['dateBesoin']);
+            // Trier les dons par date pour utiliser les plus anciens d'abord
+            uasort($donsRestants, function($a, $b) {
+                return strtotime($a['don']['dateDon']) - strtotime($b['don']['dateDon']);
             });
 
-            // Attribuer proportionnellement à chaque besoin
-            foreach ($besoinsP as $besoin) {
-                // Quantité à attribuer = besoin * ratio (arrondi à l'entier inférieur)
-                $quantite_prorata = floor($besoin['quantite_restante'] * $ratio);
+            // Ratio global pour affichage
+            $ratio = ($totalDemandes > 0) ? min(1, $totalDons / $totalDemandes) : 0;
 
-                if ($quantite_prorata <= 0) {
+            // Créer les distributions pour chaque besoin
+            foreach ($partsTheoriques as $part) {
+                $besoin = $part['besoin'];
+                $quantite_a_distribuer = $part['quantite_finale'];
+
+                if ($quantite_a_distribuer <= 0) {
                     continue;
                 }
-
-                $quantite_a_distribuer = $quantite_prorata;
 
                 // Distribuer depuis les dons disponibles
                 foreach ($donsRestants as $idDon => &$donData) {
@@ -552,6 +639,10 @@ class DispatchController extends BaseController {
                         'donateur_nom' => $don['donateur_nom'],
                         'don_quantite_disponible' => $don['quantite_restante'],
                         'quantite_attribuee' => $quantite_attribuee,
+                        'part_theorique' => round($part['part_theorique'], 2),
+                        'partie_entiere' => $part['partie_entiere'],
+                        'partie_decimale' => round($part['partie_decimale'], 4),
+                        'a_recu_bonus' => $part['a_recu_bonus'] ?? false,
                         'ratio_applique' => round($ratio * 100, 1),
                         'dateBesoin' => $besoin['dateBesoin'],
                         'dateDon' => $don['dateDon'],
@@ -565,12 +656,50 @@ class DispatchController extends BaseController {
             }
         }
 
+        // Consolider les distributions par ville+produit (même libellé)
+        $distributions = $this->consoliderDistributionsParVilleProduit($distributions);
+
+        // Trier les résultats par ville puis produit
+        usort($distributions, function($a, $b) {
+            $villeCompare = strcmp($a['ville_nom'], $b['ville_nom']);
+            if ($villeCompare !== 0) return $villeCompare;
+            return strcmp($a['produit_nom'], $b['produit_nom']);
+        });
+
         return $distributions;
     }
 
     // =========================================================================
     // MÉTHODES UTILITAIRES
     // =========================================================================
+
+    /**
+     * Consolider les distributions par ville + produit (même libellé)
+     * Si plusieurs distributions concernent la même ville et le même produit,
+     * on les fusionne en une seule ligne avec les quantités additionnées.
+     */
+    private function consoliderDistributionsParVilleProduit(array $distributions): array {
+        $consolidated = [];
+        
+        foreach ($distributions as $dist) {
+            $key = $dist['idVille'] . '_' . $dist['idProduit'];
+            
+            if (!isset($consolidated[$key])) {
+                $consolidated[$key] = $dist;
+            } else {
+                // Additionner les quantités
+                $consolidated[$key]['quantite_attribuee'] += $dist['quantite_attribuee'];
+                // Garder la quantité restante la plus récente ou additionnée selon le contexte
+                // On prend le max pour refléter le besoin total
+                $consolidated[$key]['besoin_quantite_restante'] = max(
+                    $consolidated[$key]['besoin_quantite_restante'],
+                    $dist['besoin_quantite_restante']
+                );
+            }
+        }
+        
+        return array_values($consolidated);
+    }
 
     /**
      * Calculer les statistiques de dispatch

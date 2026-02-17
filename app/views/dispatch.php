@@ -138,8 +138,14 @@
                                     <h6 class="text-success"><strong>📊 Méthode par Quantité</strong></h6>
                                     <p class="mb-0">Les demandes les plus petites sont servies en premier. Cette méthode permet de satisfaire un maximum de demandes en privilégiant les besoins modestes.</p>
                                 <?php else: ?>
-                                    <h6 class="text-warning"><strong>⚖️ Méthode par Proportionnalité</strong></h6>
-                                    <p class="mb-0">Les dons sont répartis équitablement entre toutes les demandes. Chaque ville reçoit une fraction égale des ressources disponibles, calculée au prorata de ses besoins.</p>
+                                    <h6 class="text-warning"><strong>⚖️ Méthode par Proportionnalité (Plus Forts Restes)</strong></h6>
+                                    <p class="mb-2">Les dons sont répartis équitablement entre toutes les demandes selon l'algorithme des <strong>plus forts restes</strong> :</p>
+                                    <ol class="mb-0 small">
+                                        <li>Calcul de la <strong>part théorique</strong> (décimale) pour chaque bénéficiaire</li>
+                                        <li>Attribution de la <strong>partie entière</strong> à chacun</li>
+                                        <li>Les <strong>restes</strong> (somme des décimales) sont distribués un par un aux bénéficiaires avec les plus grandes parties décimales</li>
+                                        <li>Résultat : partie entière <strong>ou</strong> partie entière +1 selon le classement des décimales</li>
+                                    </ol>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -232,6 +238,39 @@
                                     Cliquez sur <strong>SIMULER</strong> pour générer les propositions de distribution selon la méthode choisie.
                                 </div>
                             <?php else: ?>
+                                <?php if (($methode ?? 'date') === 'proportionnalite'): ?>
+                                    <?php 
+                                    // Calculer les totaux pour la légende
+                                    $totalDemande = array_sum(array_column($distributions, 'besoin_quantite_restante'));
+                                    $totalAttribue = array_sum(array_column($distributions, 'quantite_attribuee'));
+                                    $ratioGlobal = $totalDemande > 0 ? ($totalAttribue / $totalDemande) * 100 : 0;
+                                    $nbBonus = count(array_filter($distributions, fn($d) => !empty($d['a_recu_bonus'])));
+                                    ?>
+                                    <div class="alert alert-warning mb-3">
+                                        <h6 class="alert-heading">📊 Détails du calcul proportionnel</h6>
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <strong>Ratio global:</strong> <?= number_format($ratioGlobal, 1, ',', ' ') ?>%
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>Total demandé:</strong> <?= number_format($totalDemande, 0, ',', ' ') ?>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>Total attribué:</strong> <?= number_format($totalAttribue, 0, ',', ' ') ?>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>Bonus distribués:</strong> <?= $nbBonus ?> (+1)
+                                            </div>
+                                        </div>
+                                        <?php if ($ratioGlobal >= 100): ?>
+                                            <hr>
+                                            <small class="text-success">✅ Les dons couvrent 100% des besoins. Pas de reste à distribuer (décimales = 0).</small>
+                                        <?php else: ?>
+                                            <hr>
+                                            <small>Les bénéficiaires avec les plus fortes décimales reçoivent +1 unité supplémentaire.</small>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
                                 <div class="table-responsive">
                                     <table class="table table-bordered table-hover" id="tableDistributions">
                                         <thead class="table-dark">
@@ -244,7 +283,9 @@
                                                 <th>Donateur</th>
                                                 <th>Qté Attribuée</th>
                                                 <?php if (($methode ?? 'date') === 'proportionnalite'): ?>
-                                                    <th>Ratio</th>
+                                                    <th>Part Théorique</th>
+                                                    <th>Décimale</th>
+                                                    <th>Bonus</th>
                                                 <?php endif; ?>
                                                 <th>Statut</th>
                                             </tr>
@@ -260,7 +301,15 @@
                                                     <td><?= htmlspecialchars($dist['donateur_nom']) ?></td>
                                                     <td><strong class="text-success"><?= number_format($dist['quantite_attribuee'], 0, ',', ' ') ?></strong></td>
                                                     <?php if (($methode ?? 'date') === 'proportionnalite'): ?>
-                                                        <td><span class="badge bg-info ratio-badge"><?= $dist['ratio_applique'] ?? 0 ?>%</span></td>
+                                                        <td><span class="badge bg-secondary"><?= number_format($dist['part_theorique'] ?? 0, 2, ',', ' ') ?></span></td>
+                                                        <td><span class="badge bg-info"><?= number_format(($dist['partie_decimale'] ?? 0) * 100, 1, ',', ' ') ?>%</span></td>
+                                                        <td>
+                                                            <?php if (!empty($dist['a_recu_bonus'])): ?>
+                                                                <span class="badge bg-success">+1 ✓</span>
+                                                            <?php else: ?>
+                                                                <span class="badge bg-light text-muted">-</span>
+                                                            <?php endif; ?>
+                                                        </td>
                                                     <?php endif; ?>
                                                     <td>
                                                         <?php
@@ -483,8 +532,14 @@
                          <p class="mb-0">Les demandes sont traitées par ordre chronologique. La ville qui a déposé sa demande en premier reçoit son don en priorité. Les dons sont également utilisés par ordre d'ancienneté.</p>`,
                 'quantite': `<h6 class="text-success"><strong>📊 Méthode par Quantité</strong></h6>
                              <p class="mb-0">Les demandes les plus petites sont servies en premier. Cette méthode permet de satisfaire un maximum de demandes en privilégiant les besoins modestes.</p>`,
-                'proportionnalite': `<h6 class="text-warning"><strong>⚖️ Méthode par Proportionnalité</strong></h6>
-                                     <p class="mb-0">Les dons sont répartis équitablement entre toutes les demandes. Chaque ville reçoit une fraction égale des ressources disponibles, calculée au prorata de ses besoins.</p>`
+                'proportionnalite': `<h6 class="text-warning"><strong>⚖️ Méthode par Proportionnalité (Plus Forts Restes)</strong></h6>
+                                     <p class="mb-2">Les dons sont répartis équitablement selon l'algorithme des <strong>plus forts restes</strong> :</p>
+                                     <ol class="mb-0 small">
+                                         <li>Calcul de la <strong>part théorique</strong> (décimale) pour chaque bénéficiaire</li>
+                                         <li>Attribution de la <strong>partie entière</strong> à chacun</li>
+                                         <li>Les <strong>restes</strong> sont distribués aux bénéficiaires avec les plus grandes parties décimales</li>
+                                         <li>Résultat : partie entière <strong>ou</strong> partie entière +1</li>
+                                     </ol>`
             };
             descDiv.innerHTML = descriptions[methode] || descriptions['date'];
         }
@@ -567,9 +622,46 @@
                 return;
             }
 
-            const showRatio = methode === 'proportionnalite';
+            const isProportionnel = methode === 'proportionnalite';
             
-            let html = `
+            // Calculs pour la légende (méthode proportionnelle)
+            let legendeHtml = '';
+            if (isProportionnel) {
+                const totalDemande = distributions.reduce((sum, d) => sum + (d.besoin_quantite_restante || 0), 0);
+                const totalAttribue = distributions.reduce((sum, d) => sum + (d.quantite_attribuee || 0), 0);
+                const ratioGlobal = totalDemande > 0 ? (totalAttribue / totalDemande) * 100 : 0;
+                const nbBonus = distributions.filter(d => d.a_recu_bonus).length;
+                
+                let messageRatio = '';
+                if (ratioGlobal >= 100) {
+                    messageRatio = `<hr><small class="text-success">✅ Les dons couvrent 100% des besoins. Pas de reste à distribuer (décimales = 0).</small>`;
+                } else {
+                    messageRatio = `<hr><small>Les bénéficiaires avec les plus fortes décimales reçoivent +1 unité supplémentaire.</small>`;
+                }
+                
+                legendeHtml = `
+                    <div class="alert alert-warning mb-3">
+                        <h6 class="alert-heading">📊 Détails du calcul proportionnel</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>Ratio global:</strong> ${ratioGlobal.toFixed(1).replace('.', ',')}%
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Total demandé:</strong> ${formatNumber(totalDemande)}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Total attribué:</strong> ${formatNumber(totalAttribue)}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Bonus distribués:</strong> ${nbBonus} (+1)
+                            </div>
+                        </div>
+                        ${messageRatio}
+                    </div>
+                `;
+            }
+            
+            let html = legendeHtml + `
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover">
                         <thead class="table-dark">
@@ -581,7 +673,7 @@
                                 <th>Qté Demandée</th>
                                 <th>Donateur</th>
                                 <th>Qté Attribuée</th>
-                                ${showRatio ? '<th>Ratio</th>' : ''}
+                                ${isProportionnel ? '<th>Part Théorique</th><th>Décimale</th><th>Bonus</th>' : ''}
                                 <th>Statut</th>
                             </tr>
                         </thead>
@@ -599,6 +691,21 @@
                     statusBadge = '<span class="badge bg-danger">Insuffisant</span>';
                 }
                 
+                // Colonnes pour la méthode proportionnelle
+                let proportionnelCols = '';
+                if (isProportionnel) {
+                    const partTheorique = (dist.part_theorique || 0).toFixed(2).replace('.', ',');
+                    const decimale = ((dist.partie_decimale || 0) * 100).toFixed(1).replace('.', ',');
+                    const bonus = dist.a_recu_bonus 
+                        ? '<span class="badge bg-success">+1 ✓</span>' 
+                        : '<span class="badge bg-light text-muted">-</span>';
+                    proportionnelCols = `
+                        <td><span class="badge bg-secondary">${partTheorique}</span></td>
+                        <td><span class="badge bg-info">${decimale}%</span></td>
+                        <td>${bonus}</td>
+                    `;
+                }
+                
                 html += `
                     <tr>
                         <td>${index + 1}</td>
@@ -608,7 +715,7 @@
                         <td>${formatNumber(dist.besoin_quantite_restante)}</td>
                         <td>${escapeHtml(dist.donateur_nom || '')}</td>
                         <td><strong class="text-success">${formatNumber(dist.quantite_attribuee)}</strong></td>
-                        ${showRatio ? `<td><span class="badge bg-info ratio-badge">${dist.ratio_applique || 0}%</span></td>` : ''}
+                        ${proportionnelCols}
                         <td>${statusBadge}</td>
                     </tr>
                 `;
