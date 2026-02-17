@@ -5,6 +5,7 @@ use app\controllers\BesoinController;
 use app\controllers\DonController;
 use app\controllers\VilleController;
 use app\controllers\SimulationController;
+use app\controllers\AchatController;
 use app\middlewares\SecurityHeadersMiddleware;
 use flight\Engine;
 use flight\net\Router;
@@ -86,6 +87,73 @@ $router->group('', function(Router $router) use ($app) {
 		$db = $app->db();
 		$controller = new VilleController($db, $app);
 		$controller->afficherListe();
+	});
+
+	// ACHATS - pages et APIs
+	$router->get('/besoins-restants', function() use ($app) {
+		$db = $app->db();
+		$controller = new AchatController($db, $app);
+		$controller->getBesoinsRestantsPage();
+	});
+
+	$router->get('/achats', function() use ($app) {
+		$db = $app->db();
+		$controller = new AchatController($db, $app);
+		$controller->afficherPageAchats();
+	});
+
+	$router->get('/achats/auto/proposer', function() use ($app) {
+		$db = $app->db();
+		$controller = new AchatController($db, $app);
+		$controller->proposerAchatsAuto();
+	});
+
+	$router->post('/achats/auto/valider', function() use ($app) {
+		$db = $app->db();
+		$controller = new AchatController($db, $app);
+		$controller->validerAchatsAuto();
+	});
+
+	// API endpoints pour achats / besoins
+	$router->get('/api/achats/filter', function() use ($app) {
+		$db = $app->db();
+		$controller = new AchatController($db, $app);
+		$controller->getListeAchats();
+	});
+
+	$router->get('/api/achats/verifier', function() use ($app) {
+		$db = $app->db();
+		$service = new \app\models\AchatAutoService($db);
+		$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+		$res = $service->getBesoinsPrioritaires($limit);
+		header('Content-Type: application/json');
+		echo json_encode($res);
+		exit;
+	});
+
+	$router->get('/api/besoins-restants', function() use ($app) {
+		$db = $app->db();
+		$besoin = new \app\models\Besoin($db);
+		$res = $besoin->getBesoinsRestants();
+		header('Content-Type: application/json');
+		echo json_encode($res);
+		exit;
+	});
+
+	$router->get('/api/calcul-cout', function() use ($app) {
+		$db = $app->db();
+		$service = new \app\models\AchatAutoService($db);
+		$id = isset($_GET['idBesoin']) ? (int)$_GET['idBesoin'] : null;
+		if ($id) {
+			$besoin = (new \app\models\Besoin($db))->getById($id);
+			$cout = $service->calculerCoutTotal($besoin);
+			header('Content-Type: application/json');
+			echo json_encode(['cout' => $cout]);
+		} else {
+			header('Content-Type: application/json');
+			echo json_encode(['error' => 'idBesoin manquant']);
+		}
+		exit;
 	});
 
 	// Route additionnelle pour compatibilité (redirige vers /villes/liste)
