@@ -18,6 +18,7 @@ class DispatchController extends BaseController {
 
     /**
      * Réinitialiser les états des tables don, besoin, distribution depuis les historiques
+     * Restaure les états à la toute première version (état initial)
      */
     public function reinitialiserEtatsDepuisHistorique(): void {
         if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -26,15 +27,34 @@ class DispatchController extends BaseController {
         try {
             $this->db->beginTransaction();
 
+            // 0. Vider la table distribution
+            $this->db->exec('DELETE FROM distribution');
 
-            // 1. Réinitialiser table besoin
-            $this->db->exec('UPDATE besoin b JOIN historique_besoin h ON b.id = h.id SET b.idStatus = h.idStatus, b.quantite = h.quantite, b.dateBesoin = h.dateBesoin');
+            // 1. Réinitialiser table besoin à l'état initial (première entrée dans l'historique)
+            $this->db->exec('
+                UPDATE besoin b
+                JOIN (
+                    SELECT id, idStatus, quantite, dateBesoin
+                    FROM historique_besoin h1
+                    WHERE changed_at = (
+                        SELECT MIN(changed_at) FROM historique_besoin h2 WHERE h2.id = h1.id
+                    )
+                ) h ON b.id = h.id
+                SET b.idStatus = h.idStatus, b.quantite = h.quantite, b.dateBesoin = h.dateBesoin
+            ');
 
-            // 2. Réinitialiser table don
-            $this->db->exec('UPDATE don d JOIN historique_don h ON d.id = h.id SET d.idStatus = h.idStatus, d.quantite = h.quantite, d.montant = h.montant');
-
-            // 3. Réinitialiser table distribution
-            $this->db->exec('UPDATE distribution d JOIN historique_distribution h ON d.id = h.id SET d.idStatusDistribution = h.idStatusDistribution, d.quantite = h.quantite, d.montant = h.montant, d.dateDistribution = h.dateDistribution');
+            // 2. Réinitialiser table don à l'état initial (première entrée dans l'historique)
+            $this->db->exec('
+                UPDATE don d
+                JOIN (
+                    SELECT id, idStatus, quantite, montant
+                    FROM historique_don h1
+                    WHERE changed_at = (
+                        SELECT MIN(changed_at) FROM historique_don h2 WHERE h2.id = h1.id
+                    )
+                ) h ON d.id = h.id
+                SET d.idStatus = h.idStatus, d.quantite = h.quantite, d.montant = h.montant
+            ');
 
             $this->db->commit();
             $_SESSION['reinit_success'] = true;
