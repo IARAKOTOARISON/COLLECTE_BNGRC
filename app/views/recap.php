@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php $base = isset($baseUrl) ? rtrim($baseUrl, '/') : ''; ?>
+    <meta name="base-url" content="<?= htmlspecialchars($base) ?>">
     <link href="<?= htmlspecialchars($base) ?>/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?= htmlspecialchars($base) ?>/assets/css/style.css" rel="stylesheet">
     <title>Récapitulatif - BNGRC</title>
@@ -288,6 +289,7 @@
     <?php include __DIR__ . '/../../public/includes/footer.php'; ?>
     
     <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= htmlspecialchars($base) ?>/assets/js/recap.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const baseUrl = '<?= htmlspecialchars($base) ?>';
