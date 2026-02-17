@@ -53,7 +53,7 @@
                 </div>
 
                 <!-- Tableau des besoins avec cases à cocher -->
-                <form method="post" action="<?= htmlspecialchars($base) ?>/achats/valider">
+                <form method="post" action="<?= htmlspecialchars($base) ?>/achats/auto/valider">
                     <div class="card shadow">
                         <div class="card-header bg-primary text-white">Sélection des besoins</div>
                         <div class="card-body">
@@ -98,7 +98,7 @@
                         <div class="card-footer d-flex justify-content-between">
                             <div>
                                 <button type="submit" class="btn btn-success">Acheter sélection</button>
-                                <a href="<?= htmlspecialchars($base) ?>/achats/proposer" class="btn btn-outline-primary ms-2">Achat automatique prioritaire</a>
+                                <a id="btn-proposer-auto" href="<?= htmlspecialchars($base) ?>/achats/auto/proposer" class="btn btn-outline-primary ms-2">Achat automatique prioritaire</a>
                             </div>
                             <div class="text-muted small">Affiche le prix unitaire et le coût total par besoin</div>
                         </div>
@@ -110,6 +110,7 @@
 
     <?php include __DIR__ . '/../../public/includes/footer.php'; ?>
     <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= htmlspecialchars($base) ?>/assets/js/besoinRestant.js"></script>
 </body>
 
 </html>

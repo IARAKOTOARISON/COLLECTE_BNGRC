@@ -97,6 +97,7 @@
 
     <?php include __DIR__ . '/../../public/includes/footer.php'; ?>
     <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= htmlspecialchars($base) ?>/assets/js/achatListe.js"></script>
 </body>
 
 </html>
