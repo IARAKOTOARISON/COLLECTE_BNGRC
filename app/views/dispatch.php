@@ -207,6 +207,85 @@
                         </form>
                     </div>
 
+
+ <!-- Tableau des Distributions Proposées -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">📤 Distributions Proposées 
+                                <span class="badge bg-light text-primary" id="badgeMethode">
+                                    <?= match($methode ?? 'date') {
+                                        'date' => '📅 Par Date',
+                                        'quantite' => '📊 Par Quantité',
+                                        'proportionnalite' => '⚖️ Par Proportionnalité',
+                                        default => '📅 Par Date'
+                                    } ?>
+                                </span>
+                            </h5>
+                            <span class="badge bg-light text-primary fs-6" id="countDistributions">
+                                <?= count($distributions ?? []) ?> distribution(s)
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <?php if (empty($distributions)): ?>
+                                <div class="alert alert-info mb-0" id="alertNoDistribution">
+                                    <strong>ℹ️ Information</strong><br>
+                                    Cliquez sur <strong>SIMULER</strong> pour générer les propositions de distribution selon la méthode choisie.
+                                </div>
+                            <?php else: ?>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover" id="tableDistributions">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Ville</th>
+                                                <th>Produit</th>
+                                                <th>Date Besoin</th>
+                                                <th>Qté Demandée</th>
+                                                <th>Donateur</th>
+                                                <th>Qté Attribuée</th>
+                                                <?php if (($methode ?? 'date') === 'proportionnalite'): ?>
+                                                    <th>Ratio</th>
+                                                <?php endif; ?>
+                                                <th>Statut</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($distributions as $index => $dist): ?>
+                                                <tr>
+                                                    <td><?= $index + 1 ?></td>
+                                                    <td><strong><?= htmlspecialchars($dist['ville_nom']) ?></strong></td>
+                                                    <td><?= htmlspecialchars($dist['produit_nom']) ?></td>
+                                                    <td class="text-muted"><?= date('d/m/Y', strtotime($dist['dateBesoin'])) ?></td>
+                                                    <td><?= number_format($dist['besoin_quantite_restante'], 0, ',', ' ') ?></td>
+                                                    <td><?= htmlspecialchars($dist['donateur_nom']) ?></td>
+                                                    <td><strong class="text-success"><?= number_format($dist['quantite_attribuee'], 0, ',', ' ') ?></strong></td>
+                                                    <?php if (($methode ?? 'date') === 'proportionnalite'): ?>
+                                                        <td><span class="badge bg-info ratio-badge"><?= $dist['ratio_applique'] ?? 0 ?>%</span></td>
+                                                    <?php endif; ?>
+                                                    <td>
+                                                        <?php
+                                                        $ratio = ($dist['quantite_attribuee'] / $dist['besoin_quantite_restante']) * 100;
+                                                        if ($ratio >= 100) {
+                                                            echo '<span class="badge bg-success">Satisfait</span>';
+                                                        } elseif ($ratio >= 50) {
+                                                            echo '<span class="badge bg-warning text-dark">Partiel</span>';
+                                                        } else {
+                                                            echo '<span class="badge bg-danger">Insuffisant</span>';
+                                                        }
+                                                        ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <!-- Conteneur pour le tableau AJAX -->
+                            <div id="distributionsContainer"></div>
+                        </div>
+                    </div>
+
                     <!-- Tableau des Besoins non satisfaits -->
                     <div class="card shadow mb-4">
                         <div class="card-header bg-danger text-white">
@@ -295,83 +374,7 @@
                         </div>
                     </div>
 
-                    <!-- Tableau des Distributions Proposées -->
-                    <div class="card shadow mb-4">
-                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">📤 Distributions Proposées 
-                                <span class="badge bg-light text-primary" id="badgeMethode">
-                                    <?= match($methode ?? 'date') {
-                                        'date' => '📅 Par Date',
-                                        'quantite' => '📊 Par Quantité',
-                                        'proportionnalite' => '⚖️ Par Proportionnalité',
-                                        default => '📅 Par Date'
-                                    } ?>
-                                </span>
-                            </h5>
-                            <span class="badge bg-light text-primary fs-6" id="countDistributions">
-                                <?= count($distributions ?? []) ?> distribution(s)
-                            </span>
-                        </div>
-                        <div class="card-body">
-                            <?php if (empty($distributions)): ?>
-                                <div class="alert alert-info mb-0" id="alertNoDistribution">
-                                    <strong>ℹ️ Information</strong><br>
-                                    Cliquez sur <strong>SIMULER</strong> pour générer les propositions de distribution selon la méthode choisie.
-                                </div>
-                            <?php else: ?>
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-hover" id="tableDistributions">
-                                        <thead class="table-dark">
-                                            <tr>
-                                                <th>#</th>
-                                                <th>Ville</th>
-                                                <th>Produit</th>
-                                                <th>Date Besoin</th>
-                                                <th>Qté Demandée</th>
-                                                <th>Donateur</th>
-                                                <th>Qté Attribuée</th>
-                                                <?php if (($methode ?? 'date') === 'proportionnalite'): ?>
-                                                    <th>Ratio</th>
-                                                <?php endif; ?>
-                                                <th>Statut</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($distributions as $index => $dist): ?>
-                                                <tr>
-                                                    <td><?= $index + 1 ?></td>
-                                                    <td><strong><?= htmlspecialchars($dist['ville_nom']) ?></strong></td>
-                                                    <td><?= htmlspecialchars($dist['produit_nom']) ?></td>
-                                                    <td class="text-muted"><?= date('d/m/Y', strtotime($dist['dateBesoin'])) ?></td>
-                                                    <td><?= number_format($dist['besoin_quantite_restante'], 0, ',', ' ') ?></td>
-                                                    <td><?= htmlspecialchars($dist['donateur_nom']) ?></td>
-                                                    <td><strong class="text-success"><?= number_format($dist['quantite_attribuee'], 0, ',', ' ') ?></strong></td>
-                                                    <?php if (($methode ?? 'date') === 'proportionnalite'): ?>
-                                                        <td><span class="badge bg-info ratio-badge"><?= $dist['ratio_applique'] ?? 0 ?>%</span></td>
-                                                    <?php endif; ?>
-                                                    <td>
-                                                        <?php
-                                                        $ratio = ($dist['quantite_attribuee'] / $dist['besoin_quantite_restante']) * 100;
-                                                        if ($ratio >= 100) {
-                                                            echo '<span class="badge bg-success">Satisfait</span>';
-                                                        } elseif ($ratio >= 50) {
-                                                            echo '<span class="badge bg-warning text-dark">Partiel</span>';
-                                                        } else {
-                                                            echo '<span class="badge bg-danger">Insuffisant</span>';
-                                                        }
-                                                        ?>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            <?php endif; ?>
-                            
-                            <!-- Conteneur pour le tableau AJAX -->
-                            <div id="distributionsContainer"></div>
-                        </div>
-                    </div>
+                   
 
                     <!-- Résumé -->
                     <?php if (!empty($distributions)): ?>

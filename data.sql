@@ -24,6 +24,9 @@ TRUNCATE TABLE statusDistribution;
 TRUNCATE TABLE statusDon;
 TRUNCATE TABLE statusBesoin;
 TRUNCATE TABLE parametres;
+TRUNCATE TABLE historique_besoin ;
+TRUNCATE TABLE historique_don ;
+TRUNCATE TABLE historique_distribution ;
 SET FOREIGN_KEY_CHECKS=1;
 
 -- ============================================
@@ -237,6 +240,7 @@ UPDATE don SET idStatus = 2 WHERE id = 5;
 
 -- Don 9 (Argent): utilisé pour 2 achats (420000 + 630000 = 1 050 000) sur 5M
 UPDATE don SET idStatus = 2 WHERE id = 9;
+
 
 -- ============================================
 -- 17. VÉRIFICATION - COMPTER LES ENREGISTREMENTS

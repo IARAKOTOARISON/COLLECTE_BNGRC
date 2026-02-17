@@ -1,3 +1,6 @@
+
+DROP VIEW IF EXISTS vue_tableau_bord, autre_vue, encore_une_vue;
+
 -- ============================================
 -- Script de création de la base de données
 -- Structure selon votre schéma
@@ -6,10 +9,39 @@
 CREATE DATABASE IF NOT EXISTS BNGRC;
 USE BNGRC;
 
+
+-- Désactiver temporairement les contraintes de clés étrangères
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Supprimer toutes les tables
+DROP TABLE IF EXISTS historique_distribution;
+DROP TABLE IF EXISTS historique_don;
+DROP TABLE IF EXISTS historique_besoin;
+DROP TABLE IF EXISTS distribution;
+DROP TABLE IF EXISTS don;
+DROP TABLE IF EXISTS besoin;
+DROP TABLE IF EXISTS achat_details;
+DROP TABLE IF EXISTS achat;
+DROP TABLE IF EXISTS produit;
+DROP TABLE IF EXISTS typeBesoin;
+DROP TABLE IF EXISTS categorieBesoin;
+DROP TABLE IF EXISTS ville;
+DROP TABLE IF EXISTS region;
+DROP TABLE IF EXISTS statusDistribution;
+DROP TABLE IF EXISTS statusDon;
+DROP TABLE IF EXISTS statusBesoin;
+DROP TABLE IF EXISTS parametres;
+
+-- Réactiver les contraintes
+SET FOREIGN_KEY_CHECKS = 1;
+
+
+
+
 -- ============================================
 -- Table: region
 -- ============================================
-CREATE TABLE region (
+CREATE  TABLE IF NOT EXISTS region (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nom VARCHAR(100) NOT NULL UNIQUE
 ); 
@@ -17,7 +49,7 @@ CREATE TABLE region (
 -- ============================================
 -- Table: ville
 -- ============================================
-CREATE TABLE ville (
+CREATE  TABLE IF NOT EXISTS ville (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nom VARCHAR(100) NOT NULL,
     idRegion INT NOT NULL,
@@ -28,7 +60,7 @@ CREATE TABLE ville (
 -- ============================================
 -- Table: categorieBesoin
 -- ============================================
-CREATE TABLE categorieBesoin (
+CREATE  TABLE IF NOT EXISTS categorieBesoin (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nom VARCHAR(50) NOT NULL UNIQUE
 ); 
@@ -36,7 +68,7 @@ CREATE TABLE categorieBesoin (
 -- ============================================
 -- Table: typeBesoin
 -- ============================================
-CREATE TABLE typeBesoin (
+CREATE  TABLE IF NOT EXISTS typeBesoin (
     id INT PRIMARY KEY AUTO_INCREMENT,
     idCategorie INT NOT NULL,
     nom VARCHAR(50) NOT NULL,
@@ -47,7 +79,7 @@ CREATE TABLE typeBesoin (
 -- ============================================
 -- Table: produit
 -- ============================================
-CREATE TABLE produit (
+CREATE  TABLE IF NOT EXISTS produit (
     id INT PRIMARY KEY AUTO_INCREMENT,
     idCategorie INT NOT NULL,
     nom VARCHAR(100) NOT NULL,
@@ -59,7 +91,7 @@ CREATE TABLE produit (
 -- ============================================
 -- Table: statusBesoin
 -- ============================================
-CREATE TABLE statusBesoin (
+CREATE  TABLE IF NOT EXISTS statusBesoin (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nom VARCHAR(50) NOT NULL UNIQUE
 ); 
@@ -67,7 +99,7 @@ CREATE TABLE statusBesoin (
 -- ============================================
 -- Table: besoin
 -- ============================================
-CREATE TABLE besoin (
+CREATE  TABLE IF NOT EXISTS besoin (
     id INT PRIMARY KEY AUTO_INCREMENT,
     idVille INT NOT NULL,
     idProduit INT NOT NULL,
@@ -83,7 +115,7 @@ CREATE TABLE besoin (
 -- ============================================
 -- Table: statusDon
 -- ============================================
-CREATE TABLE statusDon (
+CREATE  TABLE IF NOT EXISTS statusDon (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nom VARCHAR(50) NOT NULL UNIQUE
 ); 
@@ -91,7 +123,7 @@ CREATE TABLE statusDon (
 -- ============================================
 -- Table: don
 -- ============================================
-CREATE TABLE don (
+CREATE   TABLE IF NOT EXISTS don (
     id INT PRIMARY KEY AUTO_INCREMENT,
     idProduit INT NULL,
     montant DECIMAL(15,2) NULL,
@@ -112,7 +144,7 @@ CREATE TABLE don (
 -- ============================================
 -- Table: statusDistribution
 -- ============================================
-CREATE TABLE statusDistribution (
+CREATE  TABLE IF NOT EXISTS statusDistribution (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nom VARCHAR(50) NOT NULL UNIQUE
 ); 
@@ -120,7 +152,7 @@ CREATE TABLE statusDistribution (
 -- ============================================
 -- Table: distribution
 -- ============================================
-CREATE TABLE distribution (
+CREATE  TABLE IF NOT EXISTS distribution (
     id INT PRIMARY KEY AUTO_INCREMENT,
     idBesoin INT NOT NULL,
     idDon INT NOT NULL,
@@ -144,7 +176,7 @@ CREATE TABLE distribution (
 -- ============================================
 -- Table: parametres (clé-valeur générique)
 -- ============================================
-CREATE TABLE parametres (
+CREATE  TABLE IF NOT EXISTS parametres (
     id INT PRIMARY KEY AUTO_INCREMENT,
     cle VARCHAR(100) NOT NULL UNIQUE,
     valeur TEXT NULL,
@@ -155,7 +187,7 @@ CREATE TABLE parametres (
 -- Table: achat
 -- Représente un achat lié éventuellement à un don (pour frais, achats groupés, etc.)
 -- ============================================
-CREATE TABLE achat (
+CREATE  TABLE IF NOT EXISTS achat (
     id INT PRIMARY KEY AUTO_INCREMENT,
     id_don INT NULL,
     date_achat DATETIME NOT NULL,
@@ -168,7 +200,7 @@ CREATE TABLE achat (
 -- Table: achat_details
 -- Détails d'un achat : produits achetés, quantité et prix unitaire
 -- ============================================
-CREATE TABLE achat_details (
+CREATE  TABLE IF NOT EXISTS achat_details (
     id INT PRIMARY KEY AUTO_INCREMENT,
     id_achat INT NOT NULL,
     id_produit INT NOT NULL,
@@ -189,7 +221,7 @@ ALTER TABLE distribution
 -- ============================================
 -- Vue pour le tableau de bord
 -- ============================================
-CREATE VIEW vue_tableau_bord AS
+CREATE  VIEW  vue_tableau_bord AS
 SELECT 
     v.id AS ville_id,
     v.nom AS ville_nom,
@@ -294,7 +326,7 @@ ORDER BY dist.dateDistribution DESC;
 -- historique pour les tables = > rei,nitialisation des tables
 
 -- Historique de distribution
-CREATE TABLE historique_distribution (
+CREATE  TABLE IF NOT EXISTS historique_distribution (
     history_id INT PRIMARY KEY AUTO_INCREMENT,
     id INT NOT NULL,
     idBesoin INT NOT NULL,
@@ -313,7 +345,7 @@ CREATE TABLE historique_distribution (
 );
 
 -- Historique de don
-CREATE TABLE historique_don (
+CREATE  TABLE IF NOT EXISTS historique_don (
     history_id INT PRIMARY KEY AUTO_INCREMENT,
     id INT NOT NULL,
     idProduit INT NULL,
@@ -329,7 +361,7 @@ CREATE TABLE historique_don (
 );
 
 -- Historique de besoin
-CREATE TABLE historique_besoin (
+CREATE  TABLE IF NOT EXISTS historique_besoin (
     history_id INT PRIMARY KEY AUTO_INCREMENT,
     id INT NOT NULL,
     idVille INT NOT NULL,

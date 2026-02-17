@@ -22,7 +22,7 @@
     Options -Indexes
 
     RewriteEngine On
-    RewriteBase /ETU004231/examV2/
+    RewriteBase /ETU004231/examV3/
 
     # Rediriger tout ce qui n'est pas un fichier ou un dossier vers index.php
     RewriteCond %{REQUEST_FILENAME} !-f
