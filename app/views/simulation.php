@@ -61,7 +61,7 @@
                             <div class="card border-warning">
                                 <div class="card-body text-center">
                                     <h6 class="text-warning">Besoins Non Satisfaits</h6>
-                                    <h2 class="display-6"><?= $stats['total_besoins'] ?? 0 ?></h2>
+                                    <h2 class="display-6" id="statBesoins"><?= $stats['total_besoins'] ?? 0 ?></h2>
                                     <small class="text-muted">En attente d'affectation</small>
                                 </div>
                             </div>
@@ -70,7 +70,7 @@
                             <div class="card border-success">
                                 <div class="card-body text-center">
                                     <h6 class="text-success">Dons Disponibles</h6>
-                                    <h2 class="display-6"><?= $stats['total_dons'] ?? 0 ?></h2>
+                                    <h2 class="display-6" id="statDons"><?= $stats['total_dons'] ?? 0 ?></h2>
                                     <small class="text-muted">Non encore affectés</small>
                                 </div>
                             </div>
@@ -79,7 +79,7 @@
                             <div class="card border-primary">
                                 <div class="card-body text-center">
                                     <h6 class="text-primary">Distributions Proposées</h6>
-                                    <h2 class="display-6"><?= $stats['total_distributions'] ?? 0 ?></h2>
+                                    <h2 class="display-6" id="statDistributions"><?= $stats['total_distributions'] ?? 0 ?></h2>
                                     <small class="text-muted">Affectations créées</small>
                                 </div>
                             </div>
@@ -88,7 +88,7 @@
                             <div class="card border-info">
                                 <div class="card-body text-center">
                                     <h6 class="text-info">Taux de Satisfaction</h6>
-                                    <h2 class="display-6"><?= $stats['taux_satisfaction'] ?? 0 ?>%</h2>
+                                    <h2 class="display-6" id="statTaux"><?= $stats['taux_satisfaction'] ?? 0 ?>%</h2>
                                     <small class="text-muted">Besoins couverts</small>
                                 </div>
                             </div>
@@ -104,6 +104,7 @@
                         <form method="POST" action="<?= htmlspecialchars($base) ?>/simulation/valider" id="formValider" style="display: inline;">
                             <input type="hidden" name="distributions" id="distributionsData" value="">
                             <button type="submit" id="btnValider" class="btn btn-success btn-lg" disabled>
+                                <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="spinnerValider"></span>
                                 ✓ VALIDER
                             </button>
                         </form>
@@ -206,9 +207,9 @@
                         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                             <h4 class="mb-0">3. Distributions Proposées Automatiquement</h4>
                             <?php if (!empty($distributions)): ?>
-                                <form method="POST" action="<?= htmlspecialchars($base) ?>/simulation/confirmer" style="display: inline;">
-                                    <button type="submit" class="btn btn-success btn-lg" onclick="return confirm('Confirmer l\'enregistrement de <?= count($distributions) ?> distribution(s) en base de données ?');">
-                                        ✓ Confirmer et Enregistrer
+                                <form method="POST" action="<?= htmlspecialchars($base) ?>/simulation/confirmer" style="display: inline;" id="formConfirmer">
+                                    <button type="submit" class="btn btn-success btn-lg" id="btnConfirmer">
+                                        ✓ Confirmer et Enregistrer (<?= count($distributions) ?>)
                                     </button>
                                 </form>
                             <?php endif; ?>
@@ -473,14 +474,30 @@
                         document.getElementById('resumeTaux').textContent = (data.stats?.taux_satisfaction || 0) + '%';
                     }
 
+                    // Mettre à jour les statistiques en haut de page
+                    if (data.stats) {
+                        const statBesoins = document.getElementById('statBesoins');
+                        const statDons = document.getElementById('statDons');
+                        const statDistributions = document.getElementById('statDistributions');
+                        const statTaux = document.getElementById('statTaux');
+                        
+                        if (statBesoins) statBesoins.textContent = data.stats.total_besoins || 0;
+                        if (statDons) statDons.textContent = data.stats.total_dons || 0;
+                        if (statDistributions) statDistributions.textContent = data.stats.total_distributions || 0;
+                        if (statTaux) statTaux.textContent = (data.stats.taux_satisfaction || 0) + '%';
+                    }
+
                     // Activer bouton valider
                     if (propositionsSimulees.length > 0) {
                         btnValider.disabled = false;
+                    } else {
+                        btnValider.disabled = true;
                     }
 
                     showAlert('success', 'Simulation terminée: ' + propositionsSimulees.length + ' proposition(s)');
                 } else {
                     showAlert('warning', data.message || 'Aucune proposition générée');
+                    btnValider.disabled = true;
                 }
             })
             .catch(error => {
@@ -493,6 +510,8 @@
 
         // Confirmation avant validation
         const formValider = document.getElementById('formValider');
+        const spinnerValider = document.getElementById('spinnerValider');
+        
         if (formValider) {
             formValider.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -505,6 +524,11 @@
                 if (!confirm('Confirmer la validation de ' + propositionsSimulees.length + ' distribution(s) ?')) {
                     return false;
                 }
+                
+                // Afficher le spinner et désactiver le bouton
+                spinnerValider.classList.remove('d-none');
+                btnValider.disabled = true;
+                btnSimuler.disabled = true;
                 
                 // Envoyer via AJAX
                 const formData = new FormData();
@@ -519,17 +543,38 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    spinnerValider.classList.add('d-none');
+                    
                     if (data.success) {
                         showAlert('success', data.message || 'Distributions enregistrées avec succès');
-                        setTimeout(() => window.location.reload(), 2000);
+                        // Recharger la page après 1.5 secondes
+                        setTimeout(() => window.location.reload(), 1500);
                     } else {
                         showAlert('danger', data.message || 'Erreur lors de la validation');
+                        btnValider.disabled = false;
+                        btnSimuler.disabled = false;
                     }
                 })
                 .catch(error => {
+                    spinnerValider.classList.add('d-none');
+                    btnValider.disabled = false;
+                    btnSimuler.disabled = false;
                     console.error('Erreur:', error);
-                    showAlert('danger', 'Erreur lors de la validation');
+                    showAlert('danger', 'Erreur lors de la validation: ' + error.message);
                 });
+            });
+        }
+
+        // Confirmation pour le bouton "Confirmer et Enregistrer"
+        const formConfirmer = document.getElementById('formConfirmer');
+        if (formConfirmer) {
+            formConfirmer.addEventListener('submit', function(e) {
+                const count = document.getElementById('btnConfirmer').textContent.match(/\((\d+)\)/);
+                const nb = count ? count[1] : 'toutes les';
+                if (!confirm('Confirmer l\'enregistrement de ' + nb + ' distribution(s) en base de données ?')) {
+                    e.preventDefault();
+                    return false;
+                }
             });
         }
 
