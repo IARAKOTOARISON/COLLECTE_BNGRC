@@ -46,8 +46,8 @@ if (empty($app) === true) {
 $app->path(__DIR__ . $ds . '..' . $ds . '..');
 
 // Core config variables
-$app->set('flight.base_url', '/ETU004231/examV2');
- //$app->set('flight.base_url', '/',);           // Base URL for your app. Change if app is in a subdirectory (e.g., '/myapp/')
+// $app->set('flight.base_url', '/ETU004231/examV2');
+$app->set('flight.base_url', '/',);           // Base URL for your app. Change if app is in a subdirectory (e.g., '/myapp/')
 $app->set('flight.case_sensitive', false);    // Set true for case sensitive routes. Default: false
 $app->set('flight.log_errors', true);         // Log errors to file. Recommended: true in production
 $app->set('flight.handle_errors', false);     // Let Tracy handle errors if false. Set true to use Flight's error handler
@@ -68,18 +68,18 @@ return [
 	 **************************************/
 	'database' => [
 		
-		// 'host'     => '127.0.0.1',      // Database host (e.g., 'localhost', 'db.example.com')
-		// 'dbname'   => 'BNGRC',   // Database name (e.g., 'flightphp')
-		// 'user'     => 'root',  // Database user (e.g., 'root')
-		// 'password' => '',  // Database password (never commit real passwords)
+		'host'     => '127.0.0.1',      // Database host (e.g., 'localhost', 'db.example.com')
+		'dbname'   => 'BNGRC',   // Database name (e.g., 'flightphp')
+		'user'     => 'root',  // Database user (e.g., 'root')
+		'password' => '',  // Database password (never commit real passwords)
 
 		//--------------DEPLOIEMENT----------------------------------------------------
 
 		
-	 	'host'     => 'localhost:3306',      // Database host (e.g., 'localhost', 'db.example.com')
-	 	'dbname'   => 'db_s2_ETU004231',   // Database name (e.g., 'flightphp')
-	 	'user'     => 'ETU004231',  // Database user (e.g., 'root')
-	 	'password' => '95rwEbSe',  // Database password (never commit real passwords)
+	 	// 'host'     => 'localhost:3306',      // Database host (e.g., 'localhost', 'db.example.com')
+	 	// 'dbname'   => 'db_s2_ETU004231',   // Database name (e.g., 'flightphp')
+	 	// 'user'     => 'ETU004231',  // Database user (e.g., 'root')
+	 	// 'password' => '95rwEbSe',  // Database password (never commit real passwords)
 
 	// 	// SQLite Example:
 	 	// 'file_path' => __DIR__ . $ds . '..' . $ds . 'database.sqlite', // Path to SQLite file

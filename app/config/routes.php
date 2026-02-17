@@ -7,6 +7,8 @@ use app\controllers\VilleController;
 use app\controllers\SimulationController;
 use app\controllers\AchatController;
 use app\controllers\RecapController;
+use app\controllers\ReinitializeController;
+
 use app\middlewares\SecurityHeadersMiddleware;
 use flight\Engine;
 use flight\net\Router;
@@ -273,8 +275,17 @@ $router->group('', function(Router $router) use ($app) {
 		$controller->validerSimulation();
 	});
 
+
+
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////reinitialize
+	$router->get('/reinitialize', function() use ($app) {
+		$db = $app->db();
+		$controller = new ReinitializeController($db, $app);
+		$controller->reanitialize();
+	});
+
 	
-
-
 	
 }, [ SecurityHeadersMiddleware::class ]);
