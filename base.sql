@@ -288,3 +288,58 @@ LEFT JOIN produit p ON d.idProduit = p.id
 JOIN statusDistribution sdist ON dist.idStatusDistribution = sdist.id
 ORDER BY dist.dateDistribution DESC;
 
+
+
+
+/////////////////////////////////////////////////-- historique pour les tables = > rei,nitialisation des tables
+
+-- Historique de distribution
+CREATE TABLE historique_distribution (
+    history_id INT PRIMARY KEY AUTO_INCREMENT,
+    id INT NOT NULL,
+    idBesoin INT NOT NULL,
+    idDon INT NOT NULL,
+    idVille INT NOT NULL,
+    quantite DECIMAL(15,2) NULL,
+    montant DECIMAL(15,2) NULL,
+    dateDistribution DATETIME NOT NULL,
+    idStatusDistribution INT NOT NULL,
+    changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (idBesoin) REFERENCES besoin(id),
+    FOREIGN KEY (idDon) REFERENCES don(id),
+    FOREIGN KEY (idVille) REFERENCES ville(id),
+    FOREIGN KEY (idStatusDistribution) REFERENCES statusDistribution(id),
+    INDEX idx_historique_distribution_date (changed_at)
+);
+
+-- Historique de don
+CREATE TABLE historique_don (
+    history_id INT PRIMARY KEY AUTO_INCREMENT,
+    id INT NOT NULL,
+    idProduit INT NULL,
+    montant DECIMAL(15,2) NULL,
+    quantite DECIMAL(15,2) NULL,
+    dateDon DATETIME NOT NULL,
+    idStatus INT NOT NULL,
+    donateur_nom VARCHAR(200),
+    changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (idProduit) REFERENCES produit(id),
+    FOREIGN KEY (idStatus) REFERENCES statusDon(id),
+    INDEX idx_historique_don_date (changed_at)
+);
+
+-- Historique de besoin
+CREATE TABLE historique_besoin (
+    history_id INT PRIMARY KEY AUTO_INCREMENT,
+    id INT NOT NULL,
+    idVille INT NOT NULL,
+    idProduit INT NOT NULL,
+    quantite DECIMAL(15,2) NOT NULL,
+    idStatus INT NOT NULL,
+    dateBesoin DATETIME NOT NULL,
+    changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (idVille) REFERENCES ville(id),
+    FOREIGN KEY (idProduit) REFERENCES produit(id),
+    FOREIGN KEY (idStatus) REFERENCES statusBesoin(id),
+    INDEX idx_historique_besoin_date (changed_at)
+);
