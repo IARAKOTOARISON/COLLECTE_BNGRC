@@ -43,5 +43,25 @@
             Simulation Dispatch
         </a>
     </li>
-    
+    <li class="nav-item mb-2">
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/besoins-restants">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/boxes.png" alt="besoins-restants" class="icon-menu">
+            Besoins restants (achats)
+        </a>
+    </li>
+
+    <li class="nav-item mb-2">
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/achats">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/receipt.png" alt="achats" class="icon-menu">
+            Achats
+        </a>
+    </li>
+
+    <li class="nav-item mb-2">
+        <a class="nav-link text-white" href="<?= htmlspecialchars($base) ?>/achats/auto/proposer">
+            <img src="<?= htmlspecialchars($base) ?>/assets/icons/proposition.png" alt="achats-auto" class="icon-menu">
+            Proposer achats auto
+        </a>
+    </li>
+
 </ul>
