@@ -149,5 +149,33 @@ class Distribution {
         $stmt = $this->db->prepare($query);
         return $stmt->execute();
     }
+
+    /**
+     * Sauvegarder une distribution dans l'historique
+     * @param array $distribution Données de la distribution
+     * @return bool
+     */
+    public function saveToHistorique(array $distribution): bool {
+        $query = "
+            INSERT INTO historique_distribution (
+                id, idBesoin, idDon, idVille, quantite, montant, 
+                dateDistribution, idStatusDistribution
+            ) VALUES (
+                :id, :idBesoin, :idDon, :idVille, :quantite, :montant,
+                :dateDistribution, :idStatusDistribution
+            )
+        ";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([
+            ':id' => $distribution['id'] ?? null,
+            ':idBesoin' => $distribution['idBesoin'],
+            ':idDon' => $distribution['idDon'],
+            ':idVille' => $distribution['idVille'],
+            ':quantite' => $distribution['quantite'] ?? null,
+            ':montant' => $distribution['montant'] ?? null,
+            ':dateDistribution' => $distribution['dateDistribution'] ?? date('Y-m-d H:i:s'),
+            ':idStatusDistribution' => $distribution['idStatusDistribution'] ?? 1
+        ]);
+    }
 }
 

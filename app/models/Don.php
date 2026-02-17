@@ -152,6 +152,13 @@ class Don {
     }
 
     /**
+     * Alias pour getById
+     */
+    public function getDonById($id) {
+        return $this->getById($id);
+    }
+
+    /**
      * Créer un nouveau don
      * @param array $data
      * @return bool
@@ -224,6 +231,31 @@ class Don {
             return $this->getDonsByVille($idVille);
         }
         return $this->getDonsDisponibles();
+    }
+
+    /**
+     * Sauvegarder un don dans l'historique
+     * @param array $don Données du don
+     * @return bool
+     */
+    public function saveToHistorique(array $don): bool {
+        $query = "
+            INSERT INTO historique_don (
+                id, idProduit, montant, quantite, dateDon, idStatus, donateur_nom
+            ) VALUES (
+                :id, :idProduit, :montant, :quantite, :dateDon, :idStatus, :donateur_nom
+            )
+        ";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([
+            ':id' => $don['id'],
+            ':idProduit' => $don['idProduit'] ?? null,
+            ':montant' => $don['montant'] ?? null,
+            ':quantite' => $don['quantite'] ?? null,
+            ':dateDon' => $don['dateDon'],
+            ':idStatus' => $don['idStatus'],
+            ':donateur_nom' => $don['donateur_nom'] ?? null
+        ]);
     }
 }
 

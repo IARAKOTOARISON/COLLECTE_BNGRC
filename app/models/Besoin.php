@@ -153,6 +153,13 @@ class Besoin {
     }
 
     /**
+     * Alias pour getById
+     */
+    public function getBesoinById($id) {
+        return $this->getById($id);
+    }
+
+    /**
      * Créer un nouveau besoin
      * @param array $data
      * @return bool
@@ -583,6 +590,30 @@ class Besoin {
             $this->db->rollBack();
             return ['success' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Sauvegarder un besoin dans l'historique
+     * @param array $besoin Données du besoin
+     * @return bool
+     */
+    public function saveToHistorique(array $besoin): bool {
+        $query = "
+            INSERT INTO historique_besoin (
+                id, idVille, idProduit, quantite, idStatus, dateBesoin
+            ) VALUES (
+                :id, :idVille, :idProduit, :quantite, :idStatus, :dateBesoin
+            )
+        ";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([
+            ':id' => $besoin['id'],
+            ':idVille' => $besoin['idVille'],
+            ':idProduit' => $besoin['idProduit'],
+            ':quantite' => $besoin['quantite'],
+            ':idStatus' => $besoin['idStatus'],
+            ':dateBesoin' => $besoin['dateBesoin']
+        ]);
     }
 }
 ?>

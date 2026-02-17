@@ -145,6 +145,34 @@ class DispatchController extends BaseController {
             // Début de transaction
             $this->db->beginTransaction();
 
+            // ÉTAPE 1: Récupérer et enregistrer l'état actuel dans l'historique
+            // pour chaque besoin, don et distribution impliqués
+            $besoinsToSave = [];
+            $donsToSave = [];
+            
+            foreach ($distributionsProposees as $dist) {
+                // Ajouter les IDs des besoins et dons à sauvegarder
+                $besoinsToSave[$dist['idBesoin']] = true;
+                $donsToSave[$dist['idDon']] = true;
+            }
+
+            // Sauvegarder les besoins impliqués dans l'historique
+            foreach (array_keys($besoinsToSave) as $idBesoin) {
+                $besoinData = $besoinModel->getBesoinById($idBesoin);
+                if ($besoinData) {
+                    $besoinModel->saveToHistorique($besoinData);
+                }
+            }
+
+            // Sauvegarder les dons impliqués dans l'historique
+            foreach (array_keys($donsToSave) as $idDon) {
+                $donData = $donModel->getDonById($idDon);
+                if ($donData) {
+                    $donModel->saveToHistorique($donData);
+                }
+            }
+
+            // ÉTAPE 2: Créer les distributions et les enregistrer dans l'historique
             $count = 0;
             foreach ($distributionsProposees as $dist) {
                 $data = [
@@ -156,7 +184,12 @@ class DispatchController extends BaseController {
                     'dateDistribution' => date('Y-m-d H:i:s')
                 ];
 
-                if ($distributionModel->create($data)) {
+                $distributionId = $distributionModel->create($data);
+                if ($distributionId) {
+                    // Ajouter l'ID généré aux données
+                    $data['id'] = $distributionId;
+                    // Sauvegarder la distribution dans l'historique avec son ID
+                    $distributionModel->saveToHistorique($data);
                     $count++;
                 }
             }
