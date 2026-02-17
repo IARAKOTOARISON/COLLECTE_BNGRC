@@ -28,33 +28,55 @@ class StatistiquesService {
 
     /**
      * Statistiques sur les besoins
+     * Retourne les MONTANTS en Ariary (conformément au sujet)
      * @return array
      */
     public function getStatistiquesBesoins(): array {
         try {
-            // Total des besoins
+            // Total des besoins (nombre)
             $stmtTotal = $this->db->query("SELECT COUNT(*) as total FROM besoin");
             $total = (int)$stmtTotal->fetchColumn();
 
-            // Besoins satisfaits (status = 2)
+            // Besoins satisfaits (status = 2) - nombre
             $stmtSatisfaits = $this->db->query("SELECT COUNT(*) as total FROM besoin WHERE idStatusBesoin = 2");
             $satisfaits = (int)$stmtSatisfaits->fetchColumn();
 
-            // Besoins en attente (status = 1)
+            // Besoins en attente (status = 1) - nombre
             $stmtEnAttente = $this->db->query("SELECT COUNT(*) as total FROM besoin WHERE idStatusBesoin = 1");
             $enAttente = (int)$stmtEnAttente->fetchColumn();
 
-            // Montant total des besoins (quantite * prixUnitaire)
-            $stmtMontant = $this->db->query("
+            // MONTANT TOTAL des besoins (quantite * prixUnitaire) en Ariary
+            $stmtMontantTotal = $this->db->query("
                 SELECT COALESCE(SUM(b.quantite * p.prixUnitaire), 0) as montant
                 FROM besoin b
                 LEFT JOIN produit p ON b.idProduit = p.id
             ");
-            $montantTotal = (float)$stmtMontant->fetchColumn();
+            $montantTotal = (float)$stmtMontantTotal->fetchColumn();
+
+            // MONTANT des besoins SATISFAITS (status = 2) en Ariary
+            $stmtMontantSatisfaits = $this->db->query("
+                SELECT COALESCE(SUM(b.quantite * p.prixUnitaire), 0) as montant
+                FROM besoin b
+                LEFT JOIN produit p ON b.idProduit = p.id
+                WHERE b.idStatusBesoin = 2
+            ");
+            $montantSatisfaits = (float)$stmtMontantSatisfaits->fetchColumn();
+
+            // MONTANT des besoins RESTANTS (status = 1, en attente) en Ariary
+            $stmtMontantRestants = $this->db->query("
+                SELECT COALESCE(SUM(b.quantite * p.prixUnitaire), 0) as montant
+                FROM besoin b
+                LEFT JOIN produit p ON b.idProduit = p.id
+                WHERE b.idStatusBesoin = 1
+            ");
+            $montantRestants = (float)$stmtMontantRestants->fetchColumn();
 
             // Quantité totale des besoins
             $stmtQte = $this->db->query("SELECT COALESCE(SUM(quantite), 0) as qte FROM besoin");
             $quantiteTotale = (int)$stmtQte->fetchColumn();
+
+            // Pourcentage basé sur les montants (conformément au sujet)
+            $pourcentageMontant = $montantTotal > 0 ? round(($montantSatisfaits / $montantTotal) * 100, 1) : 0;
 
             return [
                 'total' => $total,
@@ -62,6 +84,9 @@ class StatistiquesService {
                 'en_attente' => $enAttente,
                 'pourcentage_satisfaits' => $total > 0 ? round(($satisfaits / $total) * 100, 1) : 0,
                 'montant_total' => $montantTotal,
+                'montant_satisfaits' => $montantSatisfaits,
+                'montant_restants' => $montantRestants,
+                'pourcentage_montant' => $pourcentageMontant,
                 'quantite_totale' => $quantiteTotale,
             ];
         } catch (\PDOException $e) {
@@ -71,6 +96,9 @@ class StatistiquesService {
                 'en_attente' => 0,
                 'pourcentage_satisfaits' => 0,
                 'montant_total' => 0,
+                'montant_satisfaits' => 0,
+                'montant_restants' => 0,
+                'pourcentage_montant' => 0,
                 'quantite_totale' => 0,
             ];
         }

@@ -89,14 +89,15 @@
      * @param {Object} stats - Données statistiques
      */
     function mettreAJourIndicateurs(stats) {
-        // === Indicateurs Besoins ===
+        // === Indicateurs Besoins (en MONTANT - conformément au sujet) ===
         const besoins = stats.besoins || {};
-        mettreAJourElement('besoinsTotaux', besoins.total || 0);
-        mettreAJourElement('besoinsSatisfaits', besoins.satisfaits || 0);
-        mettreAJourElement('besoinsRestants', besoins.en_attente || 0);
+        // Montants en Ariary
+        mettreAJourElement('besoinsMontantTotal', formatMontant(besoins.montant_total || 0));
+        mettreAJourElement('besoinsMontantSatisfaits', formatMontant(besoins.montant_satisfaits || 0));
+        mettreAJourElement('besoinsMontantRestants', formatMontant(besoins.montant_restants || 0));
 
-        // Barre progression besoins
-        const pctBesoins = besoins.pourcentage_satisfaits || 0;
+        // Barre progression besoins (basée sur le pourcentage montant)
+        const pctBesoins = besoins.pourcentage_montant || besoins.pourcentage_satisfaits || 0;
         mettreAJourElement('pourcentageBesoins', pctBesoins + '%');
         mettreAJourBarre('barreBesoins', pctBesoins);
 

@@ -83,43 +83,43 @@
                         </button>
                     </div>
 
-                    <!-- Indicateurs Besoins -->
+                    <!-- Indicateurs Besoins (EN MONTANT - conformément au sujet) -->
                     <div class="row mb-4">
-                        <!-- Besoins Totaux -->
+                        <!-- Montant Total des Besoins -->
                         <div class="col-md-4 mb-3">
                             <div class="card stat-card border-primary h-100">
                                 <div class="card-body text-center">
-                                    <h6 class="text-primary text-uppercase">Besoins Totaux</h6>
-                                    <h2 class="display-4 fw-bold" id="besoinsTotaux">
-                                        <?= $stats['besoins']['total'] ?? 0 ?>
+                                    <h6 class="text-primary text-uppercase">Montant Total Besoins</h6>
+                                    <h2 class="display-5 fw-bold" id="besoinsMontantTotal">
+                                        <?= number_format($stats['besoins']['montant_total'] ?? 0, 0, ',', ' ') ?>
                                     </h2>
-                                    <small class="text-muted">Enregistrés dans le système</small>
+                                    <small class="text-muted">Ariary (<?= $stats['besoins']['total'] ?? 0 ?> besoins)</small>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Besoins Satisfaits -->
+                        <!-- Montant Besoins Satisfaits -->
                         <div class="col-md-4 mb-3">
                             <div class="card stat-card border-success h-100">
                                 <div class="card-body text-center">
-                                    <h6 class="text-success text-uppercase">Besoins Satisfaits</h6>
-                                    <h2 class="display-4 fw-bold" id="besoinsSatisfaits">
-                                        <?= $stats['besoins']['satisfaits'] ?? 0 ?>
+                                    <h6 class="text-success text-uppercase">Montant Besoins Satisfaits</h6>
+                                    <h2 class="display-5 fw-bold" id="besoinsMontantSatisfaits">
+                                        <?= number_format($stats['besoins']['montant_satisfaits'] ?? 0, 0, ',', ' ') ?>
                                     </h2>
-                                    <small class="text-muted">Entièrement couverts</small>
+                                    <small class="text-muted">Ariary (<?= $stats['besoins']['satisfaits'] ?? 0 ?> besoins couverts)</small>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Besoins Restants -->
+                        <!-- Montant Besoins Restants -->
                         <div class="col-md-4 mb-3">
                             <div class="card stat-card border-warning h-100">
                                 <div class="card-body text-center">
-                                    <h6 class="text-warning text-uppercase">Besoins Restants</h6>
-                                    <h2 class="display-4 fw-bold" id="besoinsRestants">
-                                        <?= $stats['besoins']['en_attente'] ?? 0 ?>
+                                    <h6 class="text-warning text-uppercase">Montant Besoins Restants</h6>
+                                    <h2 class="display-5 fw-bold" id="besoinsMontantRestants">
+                                        <?= number_format($stats['besoins']['montant_restants'] ?? 0, 0, ',', ' ') ?>
                                     </h2>
-                                    <small class="text-muted">En attente de couverture</small>
+                                    <small class="text-muted">Ariary (<?= $stats['besoins']['en_attente'] ?? 0 ?> besoins en attente)</small>
                                 </div>
                             </div>
                         </div>

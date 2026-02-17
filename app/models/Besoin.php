@@ -258,13 +258,14 @@ class Besoin {
     }
 
     /**
-     * Vérifier si un besoin a déjà été acheté (distribution avec achat)
+     * Vérifier si un besoin a déjà été acheté OU si un don en nature existe encore
+     * Conformément au sujet : "Il y a un message d'erreur si l'achat existe encore dans les dons restants"
      * @param int $idBesoin
-     * @return array [deja_achete => bool, details => array|null]
+     * @return array [deja_achete => bool, don_nature_disponible => bool, details => array|null, message_erreur => string|null]
      */
     public function verifierBesoin(int $idBesoin): array {
         try {
-            // Vérifier si une distribution avec achat existe pour ce besoin
+            // 1. Vérifier si une distribution avec achat existe pour ce besoin
             $stmt = $this->db->prepare("
                 SELECT 
                     d.id AS id_distribution,
@@ -285,19 +286,55 @@ class Besoin {
             if ($row) {
                 return [
                     'deja_achete' => true,
-                    'details' => $row
+                    'don_nature_disponible' => false,
+                    'details' => $row,
+                    'message_erreur' => 'Ce besoin a déjà été acheté'
                 ];
+            }
+
+            // 2. Vérifier si un don en nature existe pour le même produit (conformément au sujet)
+            $besoin = $this->getById($idBesoin);
+            if ($besoin && isset($besoin['idProduit'])) {
+                $stmtDonNature = $this->db->prepare("
+                    SELECT 
+                        dn.id,
+                        dn.quantite,
+                        p.nom AS produit_nom,
+                        COALESCE(SUM(dist.quantite), 0) AS quantite_distribuee,
+                        dn.quantite - COALESCE(SUM(dist.quantite), 0) AS quantite_restante
+                    FROM don dn
+                    INNER JOIN produit p ON dn.idProduit = p.id
+                    LEFT JOIN distribution dist ON dn.id = dist.idDon
+                    WHERE dn.idProduit = :idProduit AND dn.idStatusDon != 3
+                    GROUP BY dn.id, dn.quantite, p.nom
+                    HAVING quantite_restante > 0
+                    LIMIT 1
+                ");
+                $stmtDonNature->execute([':idProduit' => $besoin['idProduit']]);
+                $donNature = $stmtDonNature->fetch(\PDO::FETCH_ASSOC);
+
+                if ($donNature) {
+                    return [
+                        'deja_achete' => false,
+                        'don_nature_disponible' => true,
+                        'details' => $donNature,
+                        'message_erreur' => 'Un don en nature du même produit (' . $donNature['produit_nom'] . ') est encore disponible (' . $donNature['quantite_restante'] . ' unités). Utilisez d\'abord les dons en nature avant de faire un achat.'
+                    ];
+                }
             }
 
             return [
                 'deja_achete' => false,
-                'details' => null
+                'don_nature_disponible' => false,
+                'details' => null,
+                'message_erreur' => null
             ];
         } catch (\PDOException $e) {
             return [
                 'deja_achete' => false,
+                'don_nature_disponible' => false,
                 'details' => null,
-                'erreur' => $e->getMessage()
+                'message_erreur' => 'Erreur: ' . $e->getMessage()
             ];
         }
     }
@@ -310,12 +347,20 @@ class Besoin {
      */
     public function acheterBesoin(int $idBesoin, ?int $idDon = null): array {
         try {
-            // Vérifier si déjà acheté
+            // Vérifier si déjà acheté OU si un don en nature existe (conformément au sujet)
             $verif = $this->verifierBesoin($idBesoin);
             if ($verif['deja_achete']) {
                 return [
                     'success' => false,
-                    'message' => 'Ce besoin a déjà été acheté',
+                    'message' => $verif['message_erreur'] ?? 'Ce besoin a déjà été acheté',
+                    'details' => $verif['details']
+                ];
+            }
+            // Message d'erreur si l'achat existe encore dans les dons restants
+            if ($verif['don_nature_disponible']) {
+                return [
+                    'success' => false,
+                    'message' => $verif['message_erreur'],
                     'details' => $verif['details']
                 ];
             }
