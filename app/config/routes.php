@@ -55,11 +55,19 @@ $router->group('', function(Router $router) use ($app) {
 		$controller->lancerDispatch();
 	});
 
+
 	// Valider et enregistrer le dispatch
 	$router->post('/dispatch/valider', function () use ($app) {
 		$db = $app->db();
 		$controller = new DispatchController($db, $app);
 		$controller->validerDispatch();
+	});
+
+	// Réinitialiser les états depuis l'historique
+	$router->post('/dispatch/reinitialiser', function () use ($app) {
+		$db = $app->db();
+		$controller = new DispatchController($db, $app);
+		$controller->reinitialiserEtatsDepuisHistorique();
 	});
 
 	// =========================================================================

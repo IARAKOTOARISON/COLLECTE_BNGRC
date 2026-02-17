@@ -291,7 +291,7 @@ ORDER BY dist.dateDistribution DESC;
 
 
 
-/////////////////////////////////////////////////-- historique pour les tables = > rei,nitialisation des tables
+-- historique pour les tables = > rei,nitialisation des tables
 
 -- Historique de distribution
 CREATE TABLE historique_distribution (

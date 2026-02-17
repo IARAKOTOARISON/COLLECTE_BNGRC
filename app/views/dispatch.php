@@ -71,6 +71,13 @@
                         </div>
                     <?php endif; ?>
 
+                    <?php if (isset($reinit_success) && $reinit_success): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <strong>♻️ Succès!</strong> Les données ont bien été réinitialisées.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+
                     <?php if (isset($error) && $error): ?>
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             <strong>❌ Erreur!</strong> <?= htmlspecialchars($error) ?>
@@ -184,12 +191,18 @@
                             <span class="spinner-border spinner-border-sm d-none me-2" id="spinnerSimuler"></span>
                             🔄 SIMULER
                         </button>
-                        <form method="POST" action="<?= htmlspecialchars($base) ?>/dispatch/valider" id="formValider">
+                        <form method="POST" action="<?= htmlspecialchars($base) ?>/dispatch/valider" id="formValider" class="me-2">
                             <input type="hidden" name="distributions" id="distributionsData" value="">
                             <input type="hidden" name="methode" id="methodeInput" value="<?= htmlspecialchars($methode ?? 'date') ?>">
                             <button type="submit" id="btnValider" class="btn btn-success btn-lg" disabled>
                                 <span class="spinner-border spinner-border-sm d-none me-2" id="spinnerValider"></span>
                                 ✅ VALIDER LA DISTRIBUTION
+                            </button>
+                        </form>
+                        <form method="POST" action="<?= htmlspecialchars($base) ?>/dispatch/reinitialiser" id="formReinit">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <span class="spinner-border spinner-border-sm d-none me-2" id="spinnerReinit"></span>
+                                ♻️ Réinitialiser
                             </button>
                         </form>
                     </div>

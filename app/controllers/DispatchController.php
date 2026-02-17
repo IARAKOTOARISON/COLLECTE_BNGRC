@@ -17,6 +17,37 @@ use flight\Engine;
 class DispatchController extends BaseController {
 
     /**
+     * Réinitialiser les états des tables don, besoin, distribution depuis les historiques
+     */
+    public function reinitialiserEtatsDepuisHistorique(): void {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        try {
+            $this->db->beginTransaction();
+
+
+            // 1. Réinitialiser table besoin
+            $this->db->exec('UPDATE besoin b JOIN historique_besoin h ON b.id = h.id SET b.idStatus = h.idStatus, b.quantite = h.quantite, b.dateBesoin = h.dateBesoin');
+
+            // 2. Réinitialiser table don
+            $this->db->exec('UPDATE don d JOIN historique_don h ON d.id = h.id SET d.idStatus = h.idStatus, d.quantite = h.quantite, d.montant = h.montant');
+
+            // 3. Réinitialiser table distribution
+            $this->db->exec('UPDATE distribution d JOIN historique_distribution h ON d.id = h.id SET d.idStatusDistribution = h.idStatusDistribution, d.quantite = h.quantite, d.montant = h.montant, d.dateDistribution = h.dateDistribution');
+
+            $this->db->commit();
+            $_SESSION['reinit_success'] = true;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            $_SESSION['error_message'] = 'Erreur lors de la réinitialisation : ' . $e->getMessage();
+        }
+        $baseUrl = $this->getBaseUrl();
+        header('Location: ' . $baseUrl . '/dispatch');
+        exit;
+    }
+
+    /**
      * Afficher la page de dispatch unifiée
      */
     public function afficherDispatch(): void {
@@ -46,9 +77,11 @@ class DispatchController extends BaseController {
         $stats = $this->calculerStatistiques($besoins, $distributions);
 
         // Récupérer les messages flash
+
         $success = $_SESSION['success_message'] ?? null;
         $error = $_SESSION['error_message'] ?? null;
-        unset($_SESSION['success_message'], $_SESSION['error_message']);
+        $reinit_success = $_SESSION['reinit_success'] ?? null;
+        unset($_SESSION['success_message'], $_SESSION['error_message'], $_SESSION['reinit_success']);
 
         $this->app->render('dispatch', [
             'besoins' => $besoins,
@@ -58,6 +91,7 @@ class DispatchController extends BaseController {
             'methode' => $methode,
             'success' => $success,
             'error' => $error,
+            'reinit_success' => $reinit_success,
             'baseUrl' => $this->getBaseUrl(),
             'nonce' => $this->app->get('csp_nonce')
         ]);
