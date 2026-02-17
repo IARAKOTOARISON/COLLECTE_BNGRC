@@ -79,6 +79,38 @@ class Besoin {
     }
 
     /**
+     * Récupérer un besoin restant par ID (avec quantité restante calculée)
+     * Alias: getBesoinRestant — Liste besoins non satisfaits (singulier)
+     * @param int $id
+     * @return array|null
+     */
+    public function getBesoinRestant(int $id): ?array {
+        $query = "
+            SELECT 
+                b.id,
+                b.idVille,
+                b.idProduit,
+                b.quantite,
+                b.dateBesoin,
+                v.nom AS ville_nom,
+                p.nom AS produit_nom,
+                p.prixUnitaire,
+                COALESCE(SUM(dist.quantite), 0) AS quantite_distribuee,
+                b.quantite - COALESCE(SUM(dist.quantite), 0) AS quantite_restante
+            FROM besoin b
+            INNER JOIN ville v ON b.idVille = v.id
+            INNER JOIN produit p ON b.idProduit = p.id
+            LEFT JOIN distribution dist ON b.id = dist.idBesoin
+            WHERE b.id = :id
+            GROUP BY b.id, b.idVille, b.idProduit, b.quantite, b.dateBesoin, v.nom, p.nom, p.prixUnitaire
+            HAVING quantite_restante > 0
+        ";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
      * Récupérer les besoins d'une ville donnée
      * @param int $idVille
      * @return array
@@ -168,22 +200,198 @@ class Besoin {
     }
 
     /**
-     * Calculer le coût total avec frais pour un montant donné
-     * @param float $montant Montant de base
-     * @return float Montant avec frais (montant * 1.1 par défaut = +10% frais)
+     * Calculer le coût total avec frais pour un besoin
+     * Formule: prix × qté × (1 + frais/100)
+     * @param int $idBesoin ID du besoin
+     * @return array Détails du calcul [cout_base, frais, cout_total, taux_frais]
      */
-    public function calculerCoutAvecFrais($montant) {
-        // Récupérer le taux de frais depuis parametres si disponible, sinon 10%
+    public function calculerCoutAvecFrais($idBesoin): array {
+        // Récupérer le besoin avec prix unitaire
+        $besoin = $this->getBesoinRestant((int)$idBesoin);
+        if (!$besoin) {
+            // Si c'est un montant direct (ancienne signature)
+            if (is_numeric($idBesoin)) {
+                $montant = (float)$idBesoin;
+                $tauxFrais = $this->getTauxFrais();
+                return [
+                    'cout_base' => $montant,
+                    'taux_frais' => $tauxFrais,
+                    'frais' => $montant * ($tauxFrais / 100),
+                    'cout_total' => $montant * (1 + ($tauxFrais / 100))
+                ];
+            }
+            return ['cout_base' => 0, 'taux_frais' => 0, 'frais' => 0, 'cout_total' => 0];
+        }
+
+        $prix = (float)($besoin['prixUnitaire'] ?? 0);
+        $quantite = (float)($besoin['quantite_restante'] ?? $besoin['quantite'] ?? 0);
+        $tauxFrais = $this->getTauxFrais();
+
+        // Formule: prix × qté × (1 + frais/100)
+        $coutBase = $prix * $quantite;
+        $frais = $coutBase * ($tauxFrais / 100);
+        $coutTotal = $coutBase * (1 + ($tauxFrais / 100));
+
+        return [
+            'cout_base' => $coutBase,
+            'taux_frais' => $tauxFrais,
+            'frais' => $frais,
+            'cout_total' => $coutTotal,
+            'prix_unitaire' => $prix,
+            'quantite' => $quantite
+        ];
+    }
+
+    /**
+     * Récupérer le taux de frais depuis la table parametres
+     * @return float Taux de frais en pourcentage (défaut: 10)
+     */
+    private function getTauxFrais(): float {
         try {
             $stmt = $this->db->prepare("SELECT valeur FROM parametres WHERE cle = 'frais_achat' LIMIT 1");
             $stmt->execute();
             $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-            $tauxFrais = $row ? (float)$row['valeur'] : 10;
+            return $row ? (float)$row['valeur'] : 10;
         } catch (\PDOException $e) {
-            // Table parametres absente ou autre erreur — utiliser 10% par défaut
-            $tauxFrais = 10;
+            return 10; // 10% par défaut
         }
-        return $montant * (1 + ($tauxFrais / 100));
+    }
+
+    /**
+     * Vérifier si un besoin a déjà été acheté (distribution avec achat)
+     * @param int $idBesoin
+     * @return array [deja_achete => bool, details => array|null]
+     */
+    public function verifierBesoin(int $idBesoin): array {
+        try {
+            // Vérifier si une distribution avec achat existe pour ce besoin
+            $stmt = $this->db->prepare("
+                SELECT 
+                    d.id AS id_distribution,
+                    d.quantite,
+                    d.dateDistribution,
+                    a.id AS id_achat,
+                    a.montant_total,
+                    a.frais_appliques,
+                    a.date_achat
+                FROM distribution d
+                LEFT JOIN achat a ON d.id_achat = a.id
+                WHERE d.idBesoin = :idBesoin AND d.id_achat IS NOT NULL
+                LIMIT 1
+            ");
+            $stmt->execute([':idBesoin' => $idBesoin]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if ($row) {
+                return [
+                    'deja_achete' => true,
+                    'details' => $row
+                ];
+            }
+
+            return [
+                'deja_achete' => false,
+                'details' => null
+            ];
+        } catch (\PDOException $e) {
+            return [
+                'deja_achete' => false,
+                'details' => null,
+                'erreur' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Acheter un besoin — créer achat + distribution
+     * @param int $idBesoin
+     * @param int|null $idDon ID du don financier (auto-sélection si null)
+     * @return array Résultat [success, message, id_achat]
+     */
+    public function acheterBesoin(int $idBesoin, ?int $idDon = null): array {
+        try {
+            // Vérifier si déjà acheté
+            $verif = $this->verifierBesoin($idBesoin);
+            if ($verif['deja_achete']) {
+                return [
+                    'success' => false,
+                    'message' => 'Ce besoin a déjà été acheté',
+                    'details' => $verif['details']
+                ];
+            }
+
+            $besoin = $this->getById($idBesoin);
+            if (!$besoin) {
+                return ['success' => false, 'message' => 'Besoin introuvable'];
+            }
+
+            // Calculer le coût avec frais
+            $cout = $this->calculerCoutAvecFrais($idBesoin);
+            $montantTotal = $cout['cout_total'];
+
+            // Si pas de don spécifié, trouver un don disponible
+            if (!$idDon) {
+                $donModel = new Don($this->db);
+                $donsArgent = $donModel->getDonsArgentDisponibles();
+                foreach ($donsArgent as $don) {
+                    if ($this->verifierDonDisponible($don['id'], $montantTotal)) {
+                        $idDon = $don['id'];
+                        break;
+                    }
+                }
+            }
+
+            if (!$idDon) {
+                return ['success' => false, 'message' => 'Aucun don financier disponible'];
+            }
+
+            // Vérifier que le don peut couvrir le montant
+            if (!$this->verifierDonDisponible($idDon, $montantTotal)) {
+                return ['success' => false, 'message' => 'Don insuffisant pour couvrir ce besoin'];
+            }
+
+            $this->db->beginTransaction();
+
+            // Créer l'achat
+            $stmtAchat = $this->db->prepare("
+                INSERT INTO achat (id_don, date_achat, montant_total, frais_appliques)
+                VALUES (:id_don, NOW(), :montant_total, :frais)
+            ");
+            $stmtAchat->execute([
+                ':id_don' => $idDon,
+                ':montant_total' => $montantTotal,
+                ':frais' => $cout['frais']
+            ]);
+            $idAchat = (int)$this->db->lastInsertId();
+
+            // Créer la distribution liée à l'achat
+            $stmtDist = $this->db->prepare("
+                INSERT INTO distribution (idBesoin, idDon, idVille, quantite, idStatusDistribution, dateDistribution, id_achat)
+                VALUES (:idBesoin, :idDon, :idVille, :quantite, 2, NOW(), :id_achat)
+            ");
+            $stmtDist->execute([
+                ':idBesoin' => $idBesoin,
+                ':idDon' => $idDon,
+                ':idVille' => $besoin['idVille'],
+                ':quantite' => $besoin['quantite'],
+                ':id_achat' => $idAchat
+            ]);
+
+            $this->db->commit();
+
+            return [
+                'success' => true,
+                'message' => 'Achat effectué avec succès',
+                'id_achat' => $idAchat,
+                'cout' => $cout
+            ];
+
+        } catch (\Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
 
     /**
