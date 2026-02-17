@@ -110,7 +110,7 @@
 </html>
 </div>
 
-<?php include $_SERVER['DOCUMENT_ROOT'] . $base . '/includes/footer.php'; ?>
+<?php include __DIR__ . '/../../public/includes/footer.php'; ?>
 
 <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
