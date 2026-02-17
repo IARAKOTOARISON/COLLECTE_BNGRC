@@ -385,7 +385,6 @@
     <?php include __DIR__ . '/../../public/includes/footer.php'; ?>
     
     <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="<?= htmlspecialchars($base) ?>/assets/js/simulation.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const baseUrl = '<?= htmlspecialchars($base) ?>';
@@ -396,93 +395,174 @@
         
         let propositionsSimulees = [];
 
+        if (!btnSimuler) return;
+
         // Bouton SIMULER
-        btnSimuler.addEventListener('click', function() {
+        btnSimuler.addEventListener('click', function(e) {
+            e.preventDefault();
             spinnerSimuler.classList.remove('d-none');
             btnSimuler.disabled = true;
             btnValider.disabled = true;
 
-            fetch(baseUrl + '/api/simulation/lancer')
-                .then(response => response.json())
-                .then(data => {
-                    spinnerSimuler.classList.add('d-none');
-                    btnSimuler.disabled = false;
+            fetch(baseUrl + '/api/simulation/lancer', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                spinnerSimuler.classList.add('d-none');
+                btnSimuler.disabled = false;
 
-                    if (data.success && data.distributions) {
-                        propositionsSimulees = data.distributions;
-                        distributionsData.value = JSON.stringify(propositionsSimulees);
-                        
-                        // Séparer nature et achats
-                        const nature = propositionsSimulees.filter(d => d.type === 'nature' || !d.type);
-                        const achats = propositionsSimulees.filter(d => d.type === 'achat');
+                if (data.success && data.distributions) {
+                    propositionsSimulees = data.distributions;
+                    distributionsData.value = JSON.stringify(propositionsSimulees);
+                    
+                    // Séparer nature et achats
+                    const nature = propositionsSimulees.filter(d => d.type === 'nature' || !d.type);
+                    const achats = propositionsSimulees.filter(d => d.type === 'achat');
 
-                        // Afficher tableau nature
-                        if (nature.length > 0) {
-                            document.getElementById('cardPropositionsNature').style.display = 'block';
-                            const tbody = document.querySelector('#tablePropositionsNature tbody');
+                    // Afficher tableau nature
+                    const cardNature = document.getElementById('cardPropositionsNature');
+                    if (nature.length > 0 && cardNature) {
+                        cardNature.style.display = 'block';
+                        const tbody = document.querySelector('#tablePropositionsNature tbody');
+                        if (tbody) {
                             tbody.innerHTML = nature.map((d, i) => `
                                 <tr>
                                     <td>${i + 1}</td>
-                                    <td><strong>${d.ville_nom || ''}</strong></td>
-                                    <td>${d.produit_nom || ''}</td>
+                                    <td><strong>${escapeHtml(d.ville_nom || '')}</strong></td>
+                                    <td>${escapeHtml(d.produit_nom || '')}</td>
                                     <td><span class="badge bg-success">${d.quantite_attribuee || d.quantite || 0}</span></td>
-                                    <td>${d.donateur_nom || ''}</td>
+                                    <td>${escapeHtml(d.donateur_nom || '')}</td>
                                     <td><span class="badge bg-info">Nature</span></td>
                                 </tr>
                             `).join('');
                         }
+                    }
 
-                        // Afficher tableau achats
-                        if (achats.length > 0) {
-                            document.getElementById('cardPropositionsAchats').style.display = 'block';
-                            const tbody = document.querySelector('#tablePropositionsAchats tbody');
+                    // Afficher tableau achats
+                    const cardAchats = document.getElementById('cardPropositionsAchats');
+                    if (achats.length > 0 && cardAchats) {
+                        cardAchats.style.display = 'block';
+                        const tbody = document.querySelector('#tablePropositionsAchats tbody');
+                        if (tbody) {
                             tbody.innerHTML = achats.map((d, i) => `
                                 <tr>
                                     <td>${i + 1}</td>
-                                    <td><strong>${d.ville_nom || ''}</strong></td>
-                                    <td>${d.produit_nom || ''}</td>
+                                    <td><strong>${escapeHtml(d.ville_nom || '')}</strong></td>
+                                    <td>${escapeHtml(d.produit_nom || '')}</td>
                                     <td>${d.quantite || 0}</td>
-                                    <td>${(d.montant || 0).toLocaleString()} Ar</td>
-                                    <td>${(d.frais || 0).toLocaleString()} Ar</td>
-                                    <td><strong>${(d.total || 0).toLocaleString()} Ar</strong></td>
+                                    <td>${formatMontant(d.montant || 0)} Ar</td>
+                                    <td>${formatMontant(d.frais || 0)} Ar</td>
+                                    <td><strong>${formatMontant(d.total || 0)} Ar</strong></td>
                                 </tr>
                             `).join('');
                         }
+                    }
 
-                        // Afficher résumé
-                        document.getElementById('cardResume').style.display = 'block';
+                    // Afficher résumé
+                    const cardResume = document.getElementById('cardResume');
+                    if (cardResume) {
+                        cardResume.style.display = 'block';
                         document.getElementById('resumeNature').textContent = nature.length;
                         document.getElementById('resumeAchats').textContent = achats.length;
                         document.getElementById('resumeTotal').textContent = propositionsSimulees.length;
                         document.getElementById('resumeTaux').textContent = (data.stats?.taux_satisfaction || 0) + '%';
-
-                        // Activer bouton valider
-                        if (propositionsSimulees.length > 0) {
-                            btnValider.disabled = false;
-                        }
-
-                        alert('Simulation terminée: ' + propositionsSimulees.length + ' proposition(s)');
-                    } else {
-                        alert('Aucune proposition générée');
                     }
-                })
-                .catch(error => {
-                    spinnerSimuler.classList.add('d-none');
-                    btnSimuler.disabled = false;
-                    console.error('Erreur:', error);
-                    alert('Erreur lors de la simulation');
-                });
+
+                    // Activer bouton valider
+                    if (propositionsSimulees.length > 0) {
+                        btnValider.disabled = false;
+                    }
+
+                    showAlert('success', 'Simulation terminée: ' + propositionsSimulees.length + ' proposition(s)');
+                } else {
+                    showAlert('warning', data.message || 'Aucune proposition générée');
+                }
+            })
+            .catch(error => {
+                spinnerSimuler.classList.add('d-none');
+                btnSimuler.disabled = false;
+                console.error('Erreur:', error);
+                showAlert('danger', 'Erreur lors de la simulation: ' + error.message);
+            });
         });
 
         // Confirmation avant validation
-        document.getElementById('formValider').addEventListener('submit', function(e) {
-            if (propositionsSimulees.length === 0) {
+        const formValider = document.getElementById('formValider');
+        if (formValider) {
+            formValider.addEventListener('submit', function(e) {
                 e.preventDefault();
-                alert('Veuillez d\'abord lancer une simulation');
-                return false;
-            }
-            return confirm('Confirmer la validation de ' + propositionsSimulees.length + ' distribution(s) ?');
-        });
+                
+                if (propositionsSimulees.length === 0) {
+                    showAlert('warning', 'Veuillez d\'abord lancer une simulation');
+                    return false;
+                }
+                
+                if (!confirm('Confirmer la validation de ' + propositionsSimulees.length + ' distribution(s) ?')) {
+                    return false;
+                }
+                
+                // Envoyer via AJAX
+                const formData = new FormData();
+                formData.append('distributions', JSON.stringify(propositionsSimulees));
+                
+                fetch(baseUrl + '/simulation/valider', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', data.message || 'Distributions enregistrées avec succès');
+                        setTimeout(() => window.location.reload(), 2000);
+                    } else {
+                        showAlert('danger', data.message || 'Erreur lors de la validation');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    showAlert('danger', 'Erreur lors de la validation');
+                });
+            });
+        }
+
+        // Fonctions utilitaires
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function formatMontant(val) {
+            return new Intl.NumberFormat('fr-FR').format(val || 0);
+        }
+
+        function showAlert(type, message) {
+            const container = document.querySelector('main .container-fluid');
+            if (!container) return;
+            
+            // Supprimer les alertes existantes
+            const existing = container.querySelectorAll('.alert-auto');
+            existing.forEach(el => el.remove());
+            
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show alert-auto" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            container.insertAdjacentHTML('afterbegin', alertHtml);
+            
+            setTimeout(() => {
+                const alert = container.querySelector('.alert-auto');
+                if (alert) alert.remove();
+            }, 5000);
+        }
     });
     </script>
 </body>

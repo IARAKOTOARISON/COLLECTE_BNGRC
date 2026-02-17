@@ -141,6 +141,13 @@ $router->group('', function(Router $router) use ($app) {
 		$controller->getListeAchats();
 	});
 
+	// API JSON pour les propositions d'achat (utilisé par AJAX)
+	$router->get('/api/achats/propositions', function() use ($app) {
+		$db = $app->db();
+		$controller = new AchatController($db, $app);
+		$controller->getPropositionsAchatsJson();
+	});
+
 	$router->get('/api/achats/verifier', function() use ($app) {
 		$db = $app->db();
 		$service = new \app\models\AchatAutoService($db);

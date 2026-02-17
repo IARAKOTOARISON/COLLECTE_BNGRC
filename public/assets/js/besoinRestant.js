@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // Get base URL from meta tag or fallback to empty string
+    const baseUrl = document.querySelector('meta[name="base-url"]')?.content || '';
+    
     // Helpers
     function qs(selector, ctx = document) { return ctx.querySelector(selector); }
     function qsa(selector, ctx = document) { return Array.from(ctx.querySelectorAll(selector)); }
@@ -39,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Build proposals from server suggestions: choose first available don if present
     async function buildPropositionsFor(selectedIds) {
-        const url = '/achats/auto/proposer?limit=200';
+        const url = baseUrl + '/api/achats/propositions?limit=200';
         const res = await fetch(url, { credentials: 'same-origin' });
         if (!res.ok) throw new Error('Impossible de récupérer les propositions');
         const proposals = await res.json();
@@ -65,10 +68,10 @@ document.addEventListener('DOMContentLoaded', function () {
     async function submitPropositions(propositions) {
         const fd = new FormData();
         fd.append('propositions', JSON.stringify(propositions));
-        const res = await fetch('/achats/auto/valider', { method: 'POST', body: fd, credentials: 'same-origin' });
+        const res = await fetch(baseUrl + '/achats/auto/valider', { method: 'POST', body: fd, credentials: 'same-origin' });
         if (!res.ok) throw new Error('Erreur lors de l\'exécution des achats');
         // redirect to purchases page after success
-        window.location.href = '/achats';
+        window.location.href = baseUrl + '/achats';
     }
 
     // Handle form submit (Acheter sélection)

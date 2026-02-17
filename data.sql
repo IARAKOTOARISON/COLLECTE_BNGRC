@@ -155,28 +155,93 @@ INSERT INTO don (idProduit, montant, quantite, dateDon, idStatus, donateur_nom) 
 (NULL, 800000, NULL, '2026-02-05 16:00:00', 1, 'Association Aide');    -- Don 12: 800k Ar
 
 -- ============================================
--- 10. DISTRIBUTIONS (5 distributions max)
+-- 11. DISTRIBUTIONS (exemples de dispatch effectués)
 -- ============================================
-INSERT INTO distribution (idBesoin, idDon, idVille, quantite, montant, dateDistribution, idStatusDistribution) VALUES
--- Distribution de Riz (besoin 1, don 1)
-(1, 1, 1, 200, NULL, '2026-01-18 13:30:00', 2),
+INSERT INTO distribution (idBesoin, idDon, idVille, quantite, montant, dateDistribution, idStatusDistribution, id_achat) VALUES
+-- Distribution de Riz (besoin 4, don 1) - Antsiranana
+(4, 1, 1, 300, NULL, '2026-01-18 13:30:00', 2, NULL),
 
--- Distribution de Tôle (besoin 7, don 4)
-(7, 4, 4, 150, NULL, '2026-01-20 10:00:00', 2),
+-- Distribution de Tôle (besoin 2, don 4) - Antalaha
+(2, 4, 4, 150, NULL, '2026-01-20 10:00:00', 2, NULL),
 
--- Distribution de Clou (besoin 4, don 5)
-(4, 5, 2, 100, NULL, '2026-01-25 14:30:00', 2),
+-- Distribution de Clou (besoin 6, don 5) - Ambilobe
+(6, 5, 2, 150, NULL, '2026-01-25 14:30:00', 2, NULL),
 
--- Distribution d'argent (besoin 10, don 10)
-(10, 10, 5, NULL, 500000, '2026-02-02 11:00:00', 1),
-
--- Distribution de Farine (besoin 5, don 3)
-(5, 3, 3, 200, NULL, '2026-02-10 08:00:00', 1);
+-- Distribution de Farine (besoin 1, don 3) - Sambava (partiel: 200/400)
+(1, 3, 3, 200, NULL, '2026-02-10 08:00:00', 2, NULL);
 
 -- ============================================
--- 11. VÉRIFICATION - COMPTER LES ENREGISTREMENTS
+-- 12. ACHATS (exemples d'achats avec dons argent)
+-- Frais appliqués: 5% selon paramètres
 -- ============================================
--- SELECT 'STATUS BESOIN' AS Table, COUNT(*) AS Total FROM statusBesoin
+INSERT INTO achat (id_don, date_achat, montant_total, frais_appliques) VALUES
+-- Achat pour compléter besoin de Farine (besoin 1: 400 - 200 distribués = 200 restants)
+-- Prix Farine: 2000 Ar, Quantité: 200, Montant HT: 400000, Frais 5%: 20000
+(9, '2026-02-12 10:00:00', 420000, 20000),
+
+-- Achat de Bâches pour Antananarivo (besoin 10: 30 bâches)
+-- Prix Bâche: 20000 Ar, Quantité: 30, Montant HT: 600000, Frais 5%: 30000
+(9, '2026-02-14 14:30:00', 630000, 30000);
+
+-- ============================================
+-- 13. DÉTAILS DES ACHATS
+-- ============================================
+INSERT INTO achat_details (id_achat, id_produit, quantite, prix_unitaire) VALUES
+-- Détails achat 1: Farine
+(1, 3, 200, 2000),
+-- Détails achat 2: Bâche
+(2, 9, 30, 20000);
+
+-- ============================================
+-- 14. DISTRIBUTIONS LIÉES AUX ACHATS
+-- ============================================
+INSERT INTO distribution (idBesoin, idDon, idVille, quantite, montant, dateDistribution, idStatusDistribution, id_achat) VALUES
+-- Distribution Farine achetée (complément besoin 1)
+(1, 9, 3, 200, NULL, '2026-02-12 11:00:00', 2, 1),
+
+-- Distribution Bâches achetées (besoin 10)
+(10, 9, 5, 30, NULL, '2026-02-14 15:00:00', 2, 2);
+
+-- ============================================
+-- 15. MISE À JOUR DES STATUTS DES BESOINS
+-- ============================================
+-- Besoin 1 (Farine): 200 nature + 200 achat = 400 → Satisfait
+UPDATE besoin SET idStatus = 3 WHERE id = 1;
+
+-- Besoin 2 (Tôle): 150 distribués sur 200 → Partiellement satisfait
+UPDATE besoin SET idStatus = 2 WHERE id = 2;
+
+-- Besoin 4 (Riz): 300 distribués sur 500 → Partiellement satisfait
+UPDATE besoin SET idStatus = 2 WHERE id = 4;
+
+-- Besoin 6 (Clou): 150 distribués sur 150 → Satisfait
+UPDATE besoin SET idStatus = 3 WHERE id = 6;
+
+-- Besoin 10 (Bâche): 30 achetées et distribuées → Satisfait
+UPDATE besoin SET idStatus = 3 WHERE id = 10;
+
+-- ============================================
+-- 16. MISE À JOUR DES STATUTS DES DONS
+-- ============================================
+-- Don 1 (Riz): 300 distribués sur 1000 → reste 700 disponible
+UPDATE don SET idStatus = 2 WHERE id = 1;
+
+-- Don 3 (Farine): 200 distribués sur 200 → tout utilisé
+UPDATE don SET idStatus = 3 WHERE id = 3;
+
+-- Don 4 (Tôle): 150 distribués sur 200 → reste 50
+UPDATE don SET idStatus = 2 WHERE id = 4;
+
+-- Don 5 (Clou): 150 distribués sur 500 → reste 350
+UPDATE don SET idStatus = 2 WHERE id = 5;
+
+-- Don 9 (Argent): utilisé pour 2 achats (420000 + 630000 = 1 050 000) sur 5M
+UPDATE don SET idStatus = 2 WHERE id = 9;
+
+-- ============================================
+-- 17. VÉRIFICATION - COMPTER LES ENREGISTREMENTS
+-- ============================================
+-- SELECT 'STATUS BESOIN' AS Tableau, COUNT(*) AS Total FROM statusBesoin
 -- UNION ALL SELECT 'STATUS DON', COUNT(*) FROM statusDon
 -- UNION ALL SELECT 'STATUS DISTRIBUTION', COUNT(*) FROM statusDistribution
 -- UNION ALL SELECT 'CATÉGORIES', COUNT(*) FROM categorieBesoin
@@ -186,10 +251,13 @@ INSERT INTO distribution (idBesoin, idDon, idVille, quantite, montant, dateDistr
 -- UNION ALL SELECT 'VILLES', COUNT(*) FROM ville
 -- UNION ALL SELECT 'BESOINS', COUNT(*) FROM besoin
 -- UNION ALL SELECT 'DONS', COUNT(*) FROM don
--- UNION ALL SELECT 'DISTRIBUTIONS', COUNT(*) FROM distribution;
+-- UNION ALL SELECT 'DISTRIBUTIONS', COUNT(*) FROM distribution
+-- UNION ALL SELECT 'ACHATS', COUNT(*) FROM achat
+-- UNION ALL SELECT 'ACHAT_DETAILS', COUNT(*) FROM achat_details
+-- UNION ALL SELECT 'PARAMETRES', COUNT(*) FROM parametres;
 
 -- ============================================
--- 12. REQUÊTES DE TEST
+-- 18. REQUÊTES DE TEST
 -- ============================================
 
 -- Test 1: Liste des besoins avec leurs statuts
@@ -224,3 +292,45 @@ INSERT INTO distribution (idBesoin, idDon, idVille, quantite, montant, dateDistr
 -- GROUP BY v.id, v.nom
 -- ORDER BY v.nom;
 
+-- -- Test 4: Liste des achats avec frais
+-- SELECT 
+--     a.id AS id_achat,
+--     d.donateur_nom,
+--     a.date_achat,
+--     a.montant_total,
+--     a.frais_appliques,
+--     (a.montant_total - a.frais_appliques) AS montant_net
+-- FROM achat a
+-- LEFT JOIN don d ON a.id_don = d.id
+-- ORDER BY a.date_achat;
+
+-- -- Test 5: Récap besoins en montant (conformément au sujet)
+-- SELECT 
+--     'Montant Total' AS categorie,
+--     SUM(b.quantite * p.prixUnitaire) AS montant_ariary
+-- FROM besoin b
+-- JOIN produit p ON b.idProduit = p.id
+-- UNION ALL
+-- SELECT 
+--     'Montant Satisfait',
+--     SUM(b.quantite * p.prixUnitaire)
+-- FROM besoin b
+-- JOIN produit p ON b.idProduit = p.id
+-- WHERE b.idStatus = 3
+-- UNION ALL
+-- SELECT 
+--     'Montant Restant',
+--     SUM(b.quantite * p.prixUnitaire)
+-- FROM besoin b
+-- JOIN produit p ON b.idProduit = p.id
+-- WHERE b.idStatus IN (1, 2);
+
+-- ============================================
+-- RÉSUMÉ DES DONNÉES DE TEST
+-- ============================================
+-- 10 besoins (3 satisfaits, 2 partiels, 5 en attente)
+-- 12 dons (8 nature, 4 argent totalisant 9.3M Ar)
+-- 6 distributions (4 nature directes, 2 via achats)
+-- 2 achats (Farine + Bâches avec 5% de frais)
+-- 4 paramètres système
+-- ============================================

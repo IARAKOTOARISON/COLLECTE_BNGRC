@@ -68,13 +68,12 @@
                                         <th>Frais</th>
                                         <th>Total</th>
                                         <th>Don utilisé</th>
-                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php if (empty($achats)): ?>
                                         <tr>
-                                            <td colspan="9" class="text-center py-4">Aucun achat enregistré.</td>
+                                            <td colspan="8" class="text-center py-4">Aucun achat enregistré.</td>
                                         </tr>
                                     <?php else: ?>
                                         <?php foreach ($achats as $a): ?>
@@ -87,9 +86,6 @@
                                                 <td><?= number_format($a['frais_appliques'] ?? 0, 0, ',', ' ') ?> Ar</td>
                                                 <td><?= number_format((($a['montant_total'] ?? 0) + ($a['frais_appliques'] ?? 0)), 0, ',', ' ') ?> Ar</td>
                                                 <td><?= htmlspecialchars($a['don_nom'] ?? $a['donateur'] ?? '') ?></td>
-                                                <td>
-                                                    <a href="<?= htmlspecialchars($base) ?>/achats/<?= (int)($a['id'] ?? 0) ?>" class="btn btn-sm btn-primary">Détails</a>
-                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php endif; ?>

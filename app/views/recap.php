@@ -289,7 +289,6 @@
     <?php include __DIR__ . '/../../public/includes/footer.php'; ?>
     
     <script src="<?= htmlspecialchars($base) ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="<?= htmlspecialchars($base) ?>/assets/js/recap.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const baseUrl = '<?= htmlspecialchars($base) ?>';
@@ -297,80 +296,130 @@
         const spinnerActualiser = document.getElementById('spinnerActualiser');
         const loaderOverlay = document.getElementById('loaderOverlay');
 
+        if (!btnActualiser) return;
+
         // Bouton ACTUALISER (AJAX)
-        btnActualiser.addEventListener('click', function() {
+        btnActualiser.addEventListener('click', function(e) {
+            e.preventDefault();
             spinnerActualiser.classList.remove('d-none');
-            loaderOverlay.classList.add('active');
+            if (loaderOverlay) loaderOverlay.classList.add('active');
             btnActualiser.disabled = true;
 
-            fetch(baseUrl + '/api/stats')
-                .then(response => response.json())
-                .then(data => {
-                    spinnerActualiser.classList.add('d-none');
-                    loaderOverlay.classList.remove('active');
-                    btnActualiser.disabled = false;
+            fetch(baseUrl + '/api/stats', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                spinnerActualiser.classList.add('d-none');
+                if (loaderOverlay) loaderOverlay.classList.remove('active');
+                btnActualiser.disabled = false;
 
-                    if (data.success && data.data) {
-                        const stats = data.data;
+                if (data.success && data.data) {
+                    const stats = data.data;
 
-                        // Mettre à jour indicateurs besoins
-                        document.getElementById('besoinsTotaux').textContent = stats.besoins?.total || 0;
-                        document.getElementById('besoinsSatisfaits').textContent = stats.besoins?.satisfaits || 0;
-                        document.getElementById('besoinsRestants').textContent = stats.besoins?.en_attente || 0;
+                    // Mettre à jour indicateurs besoins (EN MONTANT)
+                    const montantTotal = stats.besoins?.montant_total || 0;
+                    const montantSatisfaits = stats.besoins?.montant_satisfaits || 0;
+                    const montantRestants = stats.besoins?.montant_restants || 0;
+                    
+                    updateElement('besoinsMontantTotal', formatMontant(montantTotal));
+                    updateElement('besoinsMontantSatisfaits', formatMontant(montantSatisfaits));
+                    updateElement('besoinsMontantRestants', formatMontant(montantRestants));
 
-                        // Mettre à jour barres de progression
-                        const pctBesoins = stats.besoins?.pourcentage_satisfaits || 0;
-                        document.getElementById('pourcentageBesoins').textContent = pctBesoins + '%';
-                        document.getElementById('barreBesoins').style.width = pctBesoins + '%';
-                        document.getElementById('barreBesoins').textContent = pctBesoins + '%';
+                    // Mettre à jour barres de progression
+                    const pctBesoins = stats.besoins?.pourcentage_montant || stats.besoins?.pourcentage_satisfaits || 0;
+                    updateElement('pourcentageBesoins', pctBesoins + '%');
+                    updateProgressBar('barreBesoins', pctBesoins);
 
-                        const pctDons = stats.dons?.pourcentage_distribues || 0;
-                        document.getElementById('pourcentageDons').textContent = pctDons + '%';
-                        document.getElementById('barreDons').style.width = pctDons + '%';
-                        document.getElementById('barreDons').textContent = pctDons + '%';
+                    const pctDons = stats.dons?.pourcentage_distribues || 0;
+                    updateElement('pourcentageDons', pctDons + '%');
+                    updateProgressBar('barreDons', pctDons);
 
-                        const pctDist = stats.distributions?.pourcentage_confirmees || 0;
-                        document.getElementById('pourcentageDistributions').textContent = pctDist + '%';
-                        document.getElementById('barreDistributions').style.width = pctDist + '%';
-                        document.getElementById('barreDistributions').textContent = pctDist + '%';
+                    const pctDist = stats.distributions?.pourcentage_confirmees || 0;
+                    updateElement('pourcentageDistributions', pctDist + '%');
+                    updateProgressBar('barreDistributions', pctDist);
 
-                        // Mettre à jour stats dons
-                        document.getElementById('donsTotal').textContent = stats.dons?.total || 0;
-                        document.getElementById('donsNature').textContent = stats.dons?.nature || 0;
-                        document.getElementById('donsArgent').textContent = stats.dons?.argent || 0;
-                        document.getElementById('donsMontant').textContent = (stats.dons?.valeur_totale || 0).toLocaleString('fr-FR');
+                    // Mettre à jour stats dons
+                    updateElement('donsTotal', stats.dons?.total || 0);
+                    updateElement('donsNature', stats.dons?.nature || 0);
+                    updateElement('donsArgent', stats.dons?.argent || 0);
+                    updateElement('donsMontant', formatMontant(stats.dons?.valeur_totale || 0));
 
-                        // Mettre à jour stats distributions
-                        document.getElementById('distTotal').textContent = stats.distributions?.total || 0;
-                        document.getElementById('distConfirmees').textContent = stats.distributions?.confirmees || 0;
-                        document.getElementById('distEnAttente').textContent = stats.distributions?.en_attente || 0;
-                        document.getElementById('distQuantite').textContent = (stats.distributions?.quantite_totale || 0).toLocaleString('fr-FR');
+                    // Mettre à jour stats distributions
+                    updateElement('distTotal', stats.distributions?.total || 0);
+                    updateElement('distConfirmees', stats.distributions?.confirmees || 0);
+                    updateElement('distEnAttente', stats.distributions?.en_attente || 0);
+                    updateElement('distQuantite', formatMontant(stats.distributions?.quantite_totale || 0));
 
-                        // Mettre à jour stats achats
-                        document.getElementById('achatsTotaux').textContent = stats.achats?.total || 0;
-                        document.getElementById('achatsMontant').textContent = (stats.achats?.montant_total || 0).toLocaleString('fr-FR') + ' Ar';
-                        document.getElementById('achatsFrais').textContent = (stats.achats?.frais_total || 0).toLocaleString('fr-FR') + ' Ar';
-                        document.getElementById('achatsNet').textContent = (stats.achats?.montant_net || 0).toLocaleString('fr-FR') + ' Ar';
+                    // Mettre à jour stats achats
+                    updateElement('achatsTotaux', stats.achats?.total || 0);
+                    updateElement('achatsMontant', formatMontant(stats.achats?.montant_total || 0) + ' Ar');
+                    updateElement('achatsFrais', formatMontant(stats.achats?.frais_total || 0) + ' Ar');
+                    updateElement('achatsNet', formatMontant(stats.achats?.montant_net || 0) + ' Ar');
 
-                        // Mettre à jour timestamp
-                        const now = new Date();
-                        document.getElementById('derniereActualisation').textContent = 
-                            now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR');
+                    // Mettre à jour timestamp
+                    const now = new Date();
+                    updateElement('derniereActualisation', 
+                        now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR'));
 
-                        // Notification succès
-                        alert('Données actualisées avec succès !');
-                    } else {
-                        alert('Erreur lors de la récupération des données');
-                    }
-                })
-                .catch(error => {
-                    spinnerActualiser.classList.add('d-none');
-                    loaderOverlay.classList.remove('active');
-                    btnActualiser.disabled = false;
-                    console.error('Erreur:', error);
-                    alert('Erreur de connexion');
-                });
+                    // Notification succès
+                    showAlert('success', 'Données actualisées avec succès !');
+                } else {
+                    showAlert('danger', data.message || 'Erreur lors de la récupération des données');
+                }
+            })
+            .catch(error => {
+                spinnerActualiser.classList.add('d-none');
+                if (loaderOverlay) loaderOverlay.classList.remove('active');
+                btnActualiser.disabled = false;
+                console.error('Erreur:', error);
+                showAlert('danger', 'Erreur de connexion: ' + error.message);
+            });
         });
+
+        // Fonctions utilitaires
+        function updateElement(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        }
+
+        function updateProgressBar(id, pct) {
+            const bar = document.getElementById(id);
+            if (bar) {
+                bar.style.width = pct + '%';
+                bar.textContent = pct + '%';
+                bar.setAttribute('aria-valuenow', pct);
+            }
+        }
+
+        function formatMontant(val) {
+            return new Intl.NumberFormat('fr-FR').format(val || 0);
+        }
+
+        function showAlert(type, message) {
+            const container = document.querySelector('main .container-fluid');
+            if (!container) return;
+            
+            const existing = container.querySelectorAll('.alert-auto');
+            existing.forEach(el => el.remove());
+            
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show alert-auto" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            container.insertAdjacentHTML('afterbegin', alertHtml);
+            
+            setTimeout(() => {
+                const alert = container.querySelector('.alert-auto');
+                if (alert) alert.remove();
+            }, 5000);
+        }
     });
     </script>
 </body>

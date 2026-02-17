@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php $base = isset($baseUrl) ? rtrim($baseUrl, '/') : ''; ?>
+    <meta name="base-url" content="<?= htmlspecialchars($base) ?>">
     <link href="<?= htmlspecialchars($base) ?>/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?= htmlspecialchars($base) ?>/assets/css/style.css" rel="stylesheet">
     <title>Besoins restants pour achats - BNGRC</title>

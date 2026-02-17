@@ -80,10 +80,61 @@ class AchatController extends BaseController {
 
     /**
      * Proposer automatiquement des achats pour les besoins prioritaires
-     * Retourne une liste de propositions JSON sans exécution.
+     * Affiche une page HTML avec les propositions d'achat
      */
     public function proposerAchatsAuto(): void {
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+        $besoins = $this->achatService->getBesoinsPrioritaires($limit);
+        
+        // Récupérer les dons en argent disponibles
+        $donsArgent = $this->donModel->getDonsArgentDisponibles();
+        $totalDonsArgent = array_sum(array_column($donsArgent, 'montant_restant'));
+        
+        // Récupérer le taux de frais depuis les paramètres
+        $stmt = $this->db->query("SELECT valeur FROM parametres WHERE cle = 'frais_achat_pourcent'");
+        $fraisPourcent = (float)($stmt->fetchColumn() ?: 10);
+        
+        $propositions = [];
+        foreach ($besoins as $b) {
+            $cout = $this->achatService->calculerCoutTotal($b);
+            $frais = $cout * ($fraisPourcent / 100);
+            $total = $cout + $frais;
+            
+            $propositions[] = [
+                'idBesoin' => $b['id'] ?? null,
+                'idVille' => $b['idVille'] ?? null,
+                'ville_nom' => $b['ville_nom'] ?? '',
+                'idProduit' => $b['idProduit'] ?? null,
+                'produit_nom' => $b['produit_nom'] ?? '',
+                'quantite' => $b['quantite'] ?? 0,
+                'prixUnitaire' => $b['prixUnitaire'] ?? 0,
+                'coutEstime' => $cout,
+                'frais' => $frais,
+                'total' => $total,
+                'dateBesoin' => $b['dateBesoin'] ?? '',
+            ];
+        }
+
+        $success = $_SESSION['success_message'] ?? null;
+        $error = $_SESSION['error_message'] ?? null;
+        unset($_SESSION['success_message'], $_SESSION['error_message']);
+
+        $this->app->render('achatProposition', [
+            'propositions' => $propositions,
+            'donsArgent' => $donsArgent,
+            'totalDonsArgent' => $totalDonsArgent,
+            'fraisPourcent' => $fraisPourcent,
+            'success' => $success,
+            'error' => $error,
+            'baseUrl' => $this->getBaseUrl()
+        ]);
+    }
+    
+    /**
+     * API JSON pour les propositions d'achat (utilisé par AJAX)
+     */
+    public function getPropositionsAchatsJson(): void {
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
         $besoins = $this->achatService->getBesoinsPrioritaires($limit);
         $propositions = [];
 
@@ -106,10 +157,26 @@ class AchatController extends BaseController {
 
     /**
      * Valider et exécuter les achats automatiques sélectionnés.
-     * Expects POST['propositions'] = JSON array of objects { idBesoin, idDon }
+     * Accepts either:
+     * - POST['propositions'] = JSON array of objects { idBesoin, idDon }
+     * - POST['besoin_ids'] = array of besoin IDs (from HTML form)
      */
     public function validerAchatsAuto(): void {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        
         try {
+            // Check for HTML form submission (besoin_ids array)
+            $besoinIds = $_POST['besoin_ids'] ?? null;
+            
+            if ($besoinIds && is_array($besoinIds)) {
+                // Handle HTML form submission
+                $this->executerAchatsDepuisFormulaire($besoinIds);
+                return;
+            }
+            
+            // Handle JSON propositions (legacy/API)
             $payload = $_POST['propositions'] ?? null;
             if (is_null($payload)) throw new \Exception('Aucune proposition reçue.');
 
@@ -145,6 +212,90 @@ class AchatController extends BaseController {
             $_SESSION['error_message'] = $e->getMessage();
         }
 
+        $this->app->redirect($this->getBaseUrl() . '/achats');
+    }
+    
+    /**
+     * Exécuter les achats depuis le formulaire HTML (besoin_ids)
+     */
+    private function executerAchatsDepuisFormulaire(array $besoinIds): void {
+        try {
+            // Récupérer les dons en argent disponibles
+            $donsArgent = $this->donModel->getDonsArgentDisponibles();
+            if (empty($donsArgent)) {
+                throw new \Exception('Aucun don financier disponible pour effectuer des achats.');
+            }
+            
+            // Récupérer le taux de frais
+            $stmt = $this->db->query("SELECT valeur FROM parametres WHERE cle = 'frais_achat_pourcent'");
+            $fraisPourcent = (float)($stmt->fetchColumn() ?: 10);
+            
+            $createdCount = 0;
+            $donIndex = 0;
+            $montantRestantDon = (float)($donsArgent[$donIndex]['montant_restant'] ?? 0);
+            $idDonCourant = (int)($donsArgent[$donIndex]['id'] ?? 0);
+            
+            $this->db->beginTransaction();
+            
+            foreach ($besoinIds as $idBesoin) {
+                $besoin = $this->besoinModel->getById((int)$idBesoin);
+                if (!$besoin) continue;
+                
+                // Calculer le coût total avec frais
+                $prixUnitaire = (float)($besoin['prixUnitaire'] ?? 0);
+                $quantite = (float)($besoin['quantite'] ?? 0);
+                $cout = $prixUnitaire * $quantite;
+                $frais = $cout * ($fraisPourcent / 100);
+                $total = $cout + $frais;
+                
+                // Vérifier si on a assez de budget dans le don courant
+                while ($montantRestantDon < $total && $donIndex < count($donsArgent) - 1) {
+                    $donIndex++;
+                    $montantRestantDon += (float)($donsArgent[$donIndex]['montant_restant'] ?? 0);
+                    $idDonCourant = (int)($donsArgent[$donIndex]['id'] ?? 0);
+                }
+                
+                if ($montantRestantDon < $total) {
+                    // Pas assez de budget, on s'arrête
+                    break;
+                }
+                
+                // Créer l'achat
+                $achatData = [
+                    'idDon' => $idDonCourant,
+                    'montant' => $cout,
+                    'frais' => $frais,
+                    'dateAchat' => date('Y-m-d H:i:s'),
+                ];
+                
+                $idAchat = $this->achatModel->create($achatData);
+                
+                if ($idAchat) {
+                    // Créer le détail de l'achat
+                    $this->achatDetailsModel->create([
+                        'idAchat' => $idAchat,
+                        'idProduit' => $besoin['idProduit'],
+                        'quantite' => $quantite,
+                        'prixUnitaire' => $prixUnitaire
+                    ]);
+                    
+                    // Mettre à jour le statut du besoin (satisfait = 2)
+                    $this->besoinModel->update((int)$idBesoin, ['idStatusBesoin' => 2]);
+                    
+                    // Déduire du montant restant
+                    $montantRestantDon -= $total;
+                    $createdCount++;
+                }
+            }
+            
+            $this->db->commit();
+            $_SESSION['success_message'] = "$createdCount achat(s) effectué(s) avec succès !";
+            
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            $_SESSION['error_message'] = 'Erreur: ' . $e->getMessage();
+        }
+        
         $this->app->redirect($this->getBaseUrl() . '/achats');
     }
 
