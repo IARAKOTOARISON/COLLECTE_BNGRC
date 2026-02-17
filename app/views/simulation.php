@@ -512,7 +512,10 @@
                 
                 fetch(baseUrl + '/simulation/valider', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
                 })
                 .then(response => response.json())
                 .then(data => {
